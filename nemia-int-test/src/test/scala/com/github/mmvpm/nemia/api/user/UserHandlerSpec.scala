@@ -44,8 +44,8 @@ class UserHandlerSpec
 
   it should "update user" in { implicit b =>
     for {
-      login <- IO.pure("login")
-      password <- IO.pure("pass")
+      login <- IO.pure("login1")
+      password <- IO.pure("pass1")
       session <- auth(login, password)
 
       updateRequest = UpdateUserRequest(Some("upd-pass"), Some("upd@email.com"), Some("+79001110022"))
