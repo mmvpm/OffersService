@@ -34,8 +34,8 @@ class AuthHandlerSpec
       backendStub <- createBackend
       response = signUp("login", "pass")(backendStub)
       _ <- response.asserting { case Right(userResponse) =>
+        userResponse.user.description.login shouldBe "login2"
         userResponse.user.description.login shouldBe "login"
-        userResponse.user.description.login shouldBe "pass"
       }
     } yield ()
   }
