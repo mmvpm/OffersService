@@ -4,6 +4,7 @@ import cats.effect.{IO, Resource}
 import cats.effect.std.Random
 import cats.effect.testing.scalatest.{AsyncIOSpec, CatsResourceIO}
 import com.github.mmvpm.nemia.api.AuthHandler
+import com.github.mmvpm.nemia.api.error.ApiError
 import com.github.mmvpm.nemia.api.util.{ConfigSupport, PostgresContainerSupport, RedisContainerSupport}
 import com.github.mmvpm.nemia.api.util.request.AuthRequestsSupport
 import com.github.mmvpm.nemia.dao.session.SessionDaoRedis
@@ -36,9 +37,9 @@ class AuthHandlerSpec
       for {
         backendStub <- createBackend
         response = signUp("login", "pass")(backendStub)
-        _ = log.info(s"### 1 [signUp]: $response")
         _ <- response.asserting { case Right(userResponse) =>
           userResponse.user.description.login shouldBe "login"
+        case Left(v) => log.info(s"### 1 [signUp]: $v"); ???
         }
       } yield ()
     }
@@ -47,10 +48,9 @@ class AuthHandlerSpec
       for {
         backend <- createBackend
         p <- signUp("login", "pass")(backend)
-        _ = log.info(s"### 2 [signUp]: $p")
+        _ = log.info(s"### 2 [signUp]: ${show(p)}")
         response = signIn("login", "pass")(backend)
-        _ = log.info(s"### 2 [signIn]: $response")
-        _ <- response.asserting(_.isRight shouldBe true)
+        _ <- response.asserting{ x => log.info(s"### 2 [signIn]: ${show(x)}"); x.isRight shouldBe true }
       } yield ()
     }
 
@@ -58,17 +58,23 @@ class AuthHandlerSpec
       for {
         backend <- createBackend
         user <- signUp("login", "pass")(backend)
-        _ = log.info(s"### 3 [signUp]: $user")
+        _ = log.info(s"### 3 [signUp]: ${show(user)}")
         session <- signIn("login", "pass")(backend)
-        _ = log.info(s"### 3 [signIn]: $session")
+        _ = log.info(s"### 3 [signIn]: ${show(session)}")
         response = whoami(session.toOption.get.session)(backend)
-        _ = log.info(s"### 3 [whoami]: $response")
         _ <- response.asserting { case Right(userId) =>
           userId.userId shouldBe user.toOption.get.user.id
+        case Left(value) => log.info(s"### 3 [whoami]: $value"); ???
         }
       } yield ()
     }
   }
+
+  private def show[T](r: Either[ApiError, T]): String =
+    r match {
+      case Left(value) => s"ApiError(${value.id}, ${value.code}, ${value.details})"
+      case Right(value) => value.toString
+    }
 
   override val resource: Resource[IO, Transactor[IO]] =
     for {
