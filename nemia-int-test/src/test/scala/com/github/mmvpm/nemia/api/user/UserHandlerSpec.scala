@@ -80,7 +80,7 @@ class UserHandlerSpec
       _ <- rateUser(session, anotherUser.id, mark = 8)
       _ <- rateUser(session, anotherUser.id, mark = 8)
 
-      _ <- getUser(anotherUser.id).asserting(_.response.user.rating.marks shouldBe List(8))
+      _ <- getUser(anotherUser.id).asserting(_.response.user.rating.marks.map(_.mark) shouldBe List(8))
     } yield ()
   }
 
