@@ -31,14 +31,14 @@ val testcontainersRedis = "1.3.2"
 val testcontainersPostgresqlVersion = "0.40.12"
 
 val cats = Seq(
-  "org.typelevel" %% "cats-core"   % catsVersion,
+  "org.typelevel" %% "cats-core" % catsVersion,
   "org.typelevel" %% "cats-effect" % catsEffect3
 )
 
 val circe = Seq(
-  "io.circe" %% "circe-core"    % circeVersion,
+  "io.circe" %% "circe-core" % circeVersion,
   "io.circe" %% "circe-generic" % circeVersion,
-  "io.circe" %% "circe-parser"  % circeVersion
+  "io.circe" %% "circe-parser" % circeVersion
 )
 
 val pureconfig = Seq(
@@ -50,9 +50,9 @@ val redis = Seq(
 )
 
 val tapir = Seq(
-  "com.softwaremill.sttp.tapir" %% "tapir-http4s-server"     % tapirVersion,
+  "com.softwaremill.sttp.tapir" %% "tapir-http4s-server" % tapirVersion,
   "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % tapirVersion,
-  "com.softwaremill.sttp.tapir" %% "tapir-json-circe"        % tapirCirce
+  "com.softwaremill.sttp.tapir" %% "tapir-json-circe" % tapirCirce
 )
 
 val http4s = Seq(
@@ -68,16 +68,16 @@ val apacheCommons = Seq(
 )
 
 val databases = Seq(
-  "io.getquill"  %% "quill-doobie"    % quillVersion,
-  "org.tpolecat" %% "doobie-core"     % doobieVersion,
+  "io.getquill" %% "quill-doobie" % quillVersion,
+  "org.tpolecat" %% "doobie-core" % doobieVersion,
   "org.tpolecat" %% "doobie-postgres" % doobieVersion,
-  "org.tpolecat" %% "doobie-hikari"   % doobieVersion,
-  "org.flywaydb"  % "flyway-core"     % flywayVersion
+  "org.tpolecat" %% "doobie-hikari" % doobieVersion,
+  "org.flywaydb" % "flyway-core" % flywayVersion
 )
 
 val sttpClient = Seq(
-  "com.softwaremill.sttp.client3" %% "core"                           % sttpClientVersion,
-  "com.softwaremill.sttp.client3" %% "circe"                          % sttpClientVersion,
+  "com.softwaremill.sttp.client3" %% "core" % sttpClientVersion,
+  "com.softwaremill.sttp.client3" %% "circe" % sttpClientVersion,
   "com.softwaremill.sttp.client3" %% "async-http-client-backend-cats" % catsBackendVersion
 )
 
@@ -86,9 +86,9 @@ val scrapper = Seq(
 )
 
 val testcontainers = Seq(
-  "com.redislabs.testcontainers" % "testcontainers-redis"            % testcontainersRedis,
-  "com.dimafeng"                %% "testcontainers-scala-scalatest"  % testcontainersVersion,
-  "com.dimafeng"                %% "testcontainers-scala-postgresql" % testcontainersPostgresqlVersion
+  "com.redislabs.testcontainers" % "testcontainers-redis" % testcontainersRedis,
+  "com.dimafeng" %% "testcontainers-scala-scalatest" % testcontainersVersion,
+  "com.dimafeng" %% "testcontainers-scala-postgresql" % testcontainersPostgresqlVersion
 )
 
 val scalatest = Seq(
