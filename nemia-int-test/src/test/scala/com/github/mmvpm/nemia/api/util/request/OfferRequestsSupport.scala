@@ -15,16 +15,22 @@ import sttp.client3.circe._
 
 trait OfferRequestsSupport extends ConfigSupport {
 
-  def getOffer(offerId: OfferID)(backend: SttpBackend[IO, Any]): IO[Either[ApiError, OfferResponse]] =
+  def getOffer(
+      offerId: OfferID
+    )(implicit backend: SttpBackend[IO, Any]): IO[Either[ApiError, OfferResponse]] =
     basicRequest
       .get(uri"$baseUrl/api/v1/offer/$offerId")
       .response(asJsonEither[ApiError, OfferResponse])
       .send(backend)
       .map(_.body.leftMap(JsonUtils.parseFailure))
 
-  def createOffer(description: OfferDescription)(backend: SttpBackend[IO, Any]): IO[Either[ApiError, OfferResponse]] =
+  def createOffer(
+      session: Session,
+      description: OfferDescription
+    )(implicit backend: SttpBackend[IO, Any]): IO[Either[ApiError, OfferResponse]] =
     basicRequest
       .post(uri"$baseUrl/api/v1/offer")
+      .header(SessionHeaderName, session.toString)
       .body(CreateOfferRequest(description))
       .response(asJsonEither[ApiError, OfferResponse])
       .send(backend)
@@ -34,7 +40,7 @@ trait OfferRequestsSupport extends ConfigSupport {
       session: Session,
       offerId: OfferID,
       request: UpdateOfferRequest
-    )(backend: SttpBackend[IO, Any]): IO[Either[ApiError, OfferResponse]] =
+    )(implicit backend: SttpBackend[IO, Any]): IO[Either[ApiError, OfferResponse]] =
     basicRequest
       .put(uri"$baseUrl/api/v1/offer/$offerId")
       .header(SessionHeaderName, session.toString)
@@ -43,7 +49,10 @@ trait OfferRequestsSupport extends ConfigSupport {
       .send(backend)
       .map(_.body.leftMap(JsonUtils.parseFailure))
 
-  def deleteOffer(session: Session, offerId: OfferID)(backend: SttpBackend[IO, Any]): IO[Either[ApiError, OkResponse]] =
+  def deleteOffer(
+      session: Session,
+      offerId: OfferID
+    )(implicit backend: SttpBackend[IO, Any]): IO[Either[ApiError, OkResponse]] =
     basicRequest
       .delete(uri"$baseUrl/api/v1/offer/$offerId")
       .header(SessionHeaderName, session.toString)

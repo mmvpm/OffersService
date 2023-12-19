@@ -14,7 +14,10 @@ import sttp.client3.circe._
 
 trait AuthRequestsSupport extends ConfigSupport {
 
-  def signUp(login: String, password: String)(backend: SttpBackend[IO, Any]): IO[Either[ApiError, UserResponse]] =
+  def signUp(
+      login: String,
+      password: String
+    )(implicit backend: SttpBackend[IO, Any]): IO[Either[ApiError, UserResponse]] =
     basicRequest
       .post(uri"$baseUrl/api/v1/auth/sign-up")
       .body(SignUpRequest(UserDescriptionRaw(login, password)))
@@ -22,15 +25,19 @@ trait AuthRequestsSupport extends ConfigSupport {
       .send(backend)
       .map(_.body.leftMap(JsonUtils.parseFailure))
 
-  def signIn(login: String, password: String)(backend: SttpBackend[IO, Any]): IO[Either[ApiError, SessionResponse]] =
+  def signIn(
+      login: String,
+      password: String
+    )(implicit backend: SttpBackend[IO, Any]): IO[Either[ApiError, SessionResponse]] =
     basicRequest
       .post(uri"$baseUrl/api/v1/auth/sign-in")
-      .auth.basic(login, password)
+      .auth
+      .basic(login, password)
       .response(asJsonEither[ApiError, SessionResponse])
       .send(backend)
       .map(_.body.leftMap(JsonUtils.parseFailure))
 
-  def whoami(session: Session)(backend: SttpBackend[IO, Any]): IO[Either[ApiError, UserIdResponse]] =
+  def whoami(session: Session)(implicit backend: SttpBackend[IO, Any]): IO[Either[ApiError, UserIdResponse]] =
     basicRequest
       .get(uri"$baseUrl/api/v1/auth/whoami/$session")
       .response(asJsonEither[ApiError, UserIdResponse])
