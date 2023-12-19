@@ -43,7 +43,7 @@ class UserHandler[F[_]: Functor](userService: UserService[F], override val authS
   private val rateUser: ServerEndpoint[Any, F] =
     endpoint.withApiErrors.withSession.post
       .summary("Поставить оценку другому пользователю")
-      .in("api" / "v1" / "user" / path[UserID]("to-user-id"))
+      .in("api" / "v1" / "user" / "rate" / path[UserID]("to-user-id"))
       .in(jsonBody[RateUserRequest])
       .out(jsonBody[OkResponse])
       .serverLogic(fromUserId => { case (toUserId, request) =>
