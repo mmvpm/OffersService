@@ -33,21 +33,29 @@ class UserDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
   override def getUser(userId: UserID): EitherT[F, UserDaoError, User] = transaction {
     for {
       users <- run(query[Users].filter(_.id == lift(userId)))
+      _ = ensure[F](users.nonEmpty, s"$users.nonEmpty")
       rating <- run(query[UserRating].filter(_.toUserId == lift(userId)))
     } yield assembleUser(users, rating)
-  }.transact(tr).attemptT.leftMap { t: Throwable =>
-    log.error(s"get user $userId failed", t)
-    InternalUserDaoError(t.getMessage)
+  }.transact(tr).attemptT.leftMap {
+    case e: EnsureException =>
+      log.error(s"get user $userId failed", e)
+      UserNotFoundDaoError(userId)
+    case t: Throwable =>
+      InternalUserDaoError(t.getMessage)
   }
 
   override def getUser(login: String): EitherT[F, UserDaoError, User] = transaction {
     for {
       users <- run(query[Users].filter(_.login == lift(login)))
+      _ = ensure[F](users.nonEmpty, s"$users.nonEmpty")
       rating <- run(query[UserRating].filter(_.toUserId == lift(users.single.id)))
     } yield assembleUser(users, rating)
-  }.transact(tr).attemptT.leftMap { t: Throwable =>
-    log.error(s"get user @$login failed", t)
-    InternalUserDaoError(t.getMessage)
+  }.transact(tr).attemptT.leftMap {
+    case e: EnsureException =>
+      log.error(s"get user @$login failed", e)
+      UserLoginNotFoundDaoError(login)
+    case t: Throwable =>
+      InternalUserDaoError(t.getMessage)
   }
 
   override def getUserStatus(userId: UserID): EitherT[F, UserDaoError, UserStatus] =
@@ -81,7 +89,6 @@ class UserDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
       query[Users].filter(_.id == lift(userId)).map(_.status)
     }
   }.transact(tr).attemptT.leftMap { t: Throwable =>
-    log.error(s"get user $userId status failed", t)
     InternalUserDaoError(t.getMessage)
   }
 
@@ -89,7 +96,7 @@ class UserDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
     for {
       r1 <- run(query[Users].insertValue(lift(user)))
       r2 <- run(liftQuery(userRating).foreach(query[UserRating].insertValue(_)))
-      _ = ensure[F](r1 == 1 && r2.forall(_ == 1), s"failed to insert user ${user.id}")
+      _ = ensure[F](r1 == 1 && r2.forall(_ == 1), s"$r1 == 1 && $r2.forall(_ == 1)")
     } yield ()
   }.transact(tr)
 
@@ -122,7 +129,7 @@ class UserDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
           query[UserRating].insertValue(rating)
         }
       }
-      _ = ensure[F](r1 == 1 && r2 == 1 && r3.forall(_ == 1), s"failed to update user $userId")
+      _ = ensure[F](r1 == 1 && r2 == 1 && r3.forall(_ == 1), s"$r1 == 1 && $r2 == 1 && $r3.forall(_ == 1)")
     } yield newUser
 
   private def assembleUser(dbUsers: List[Users], dbRating: List[UserRating]): User =
