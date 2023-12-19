@@ -5,7 +5,7 @@ import cats.effect.std.UUIDGen
 import cats.effect.testing.scalatest.{AsyncIOSpec, CatsResourceIO}
 import com.github.mmvpm.model._
 import com.github.mmvpm.nemia.api.request.UpdateOfferRequest
-import com.github.mmvpm.nemia.api.util.{ConfigSupport, SttpBackendSupport}
+import com.github.mmvpm.nemia.api.util.SttpBackendSupport
 import com.github.mmvpm.nemia.api.util.request.{AuthRequestsSupport, OfferRequestsSupport}
 import com.github.mmvpm.nemia.api.util.EitherUtils.RichEither
 import com.github.mmvpm.util.Logging
@@ -20,7 +20,6 @@ class OfferHandlerSpec
   with AsyncIOSpec
   with CatsResourceIO[SttpBackend[IO, Any]]
   with Matchers
-  with ConfigSupport
   with SttpBackendSupport
   with OfferRequestsSupport
   with AuthRequestsSupport
@@ -80,7 +79,7 @@ class OfferHandlerSpec
       offer <- createOffer(session, description).map(_.response.offer)
       _ <- deleteOffer(session, offer.id)
 
-      _ <- getOffer(offer.id).asserting(_.error.code shouldBe StatusCode.NotFound)
+      _ <- getOffer(offer.id).asserting(_.response.offer.status shouldBe OfferStatus.Deleted)
     } yield ()
   }
 

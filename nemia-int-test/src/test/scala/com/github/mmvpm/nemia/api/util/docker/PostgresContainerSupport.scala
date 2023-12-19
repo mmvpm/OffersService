@@ -1,4 +1,4 @@
-package com.github.mmvpm.nemia.api.util
+package com.github.mmvpm.nemia.api.util.docker
 
 import cats.effect.{IO, Resource}
 import com.dimafeng.testcontainers.PostgreSQLContainer

@@ -3,6 +3,7 @@ package com.github.mmvpm.nemia.api.util
 import cats.effect.{IO, Resource}
 import cats.effect.std.Random
 import com.github.mmvpm.nemia.api.{AuthHandler, OfferHandler, UserHandler}
+import com.github.mmvpm.nemia.api.util.docker.{PostgresContainerSupport, RedisContainerSupport}
 import com.github.mmvpm.nemia.dao.offer.OfferDaoPostgresql
 import com.github.mmvpm.nemia.dao.session.SessionDaoRedis
 import com.github.mmvpm.nemia.dao.user.UserDaoPostgresql
