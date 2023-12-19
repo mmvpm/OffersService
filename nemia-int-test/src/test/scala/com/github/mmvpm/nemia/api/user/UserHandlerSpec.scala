@@ -68,12 +68,12 @@ class UserHandlerSpec
 
   it should "rate another user" in { implicit b =>
     for {
-      anotherLogin <- IO.pure("login")
-      anotherPassword <- IO.pure("pass")
+      anotherLogin <- IO.pure("another-login")
+      anotherPassword <- IO.pure("another-pass")
       anotherUser <- signUp(anotherLogin, anotherPassword).map(_.response.user)
 
-      login <- IO.pure("delete-login")
-      password <- IO.pure("delete-pass")
+      login <- IO.pure("login")
+      password <- IO.pure("pass")
       session <- auth(login, password)
 
       _ <- rateUser(session, anotherUser.id, mark = 9)
