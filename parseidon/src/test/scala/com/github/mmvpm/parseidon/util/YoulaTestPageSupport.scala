@@ -9,7 +9,7 @@ import scala.util.Using
 trait YoulaTestPageSupport {
 
   val youlaTestPage: String =
-    Using(Source.fromResource("youla-page.html"))(_.getLines().mkString("\n")).get
+    Using(Source.fromResource("youla-page.txt"))(_.getLines().mkString("\n")).get
 
   val youlaTestPageItem: YoulaItem =
     YoulaItem(
