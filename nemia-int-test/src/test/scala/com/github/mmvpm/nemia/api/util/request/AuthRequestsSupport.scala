@@ -6,6 +6,7 @@ import com.github.mmvpm.model.{Session, UserDescriptionRaw}
 import com.github.mmvpm.nemia.api.error.ApiError
 import com.github.mmvpm.nemia.api.error.CirceInstances._
 import com.github.mmvpm.nemia.api.request._
+import com.github.mmvpm.nemia.api.util.EitherUtils.RichEither
 import com.github.mmvpm.nemia.api.response._
 import com.github.mmvpm.nemia.api.util.{ConfigSupport, JsonUtils}
 import com.github.mmvpm.nemia.api.util.CirceInstances._
@@ -43,4 +44,10 @@ trait AuthRequestsSupport extends ConfigSupport {
       .response(asJsonEither[ApiError, UserIdResponse])
       .send(backend)
       .map(_.body.leftMap(JsonUtils.parseFailure))
+
+  /**
+   * Login or register a new user and returns the session.
+   */
+  def auth(login: String, password: String)(implicit backend: SttpBackend[IO, Any]): IO[Session] =
+    (signUp(login, password) *> signIn(login, password)).map(_.response.session)
 }
