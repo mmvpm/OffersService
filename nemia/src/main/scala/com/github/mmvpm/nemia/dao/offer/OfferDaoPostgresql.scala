@@ -53,20 +53,20 @@ class OfferDaoPostgresql[F[_]: MonadCancelThrow: Monad](implicit val tr: Transac
   override def createOffer(offer: Offer): EitherT[F, OfferDaoError, Unit] =
     insert(Offers.from(offer), OfferPhotos.from(offer)).attemptT.leftMap {
       case e: EnsureException =>
-        log.error(s"create offer ${offer.id} failed", e)
         OfferInsertFailedDaoError(offer.id)
       case DuplicateKeyException(_) =>
         OfferAlreadyExistsDaoError(offer.id)
       case t: Throwable =>
+        log.error(s"create offer ${offer.id} failed", t)
         InternalOfferDaoError(t.getMessage)
     }
 
   override def updateOffer(offerId: OfferID, updateFunc: Offer => DaoUpdate[Offer]): EitherT[F, OfferDaoError, Offer] =
     update(offerId, updateFunc).attemptT.leftMap {
       case e: EnsureException =>
-        log.error(s"update offer $offerId failed", e)
         OfferUpdateFailedDaoError(offerId)
       case t: Throwable =>
+        log.error(s"update offer $offerId failed", t)
         InternalOfferDaoError(t.getMessage)
     }
 

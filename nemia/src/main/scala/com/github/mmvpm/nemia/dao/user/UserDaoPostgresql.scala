@@ -38,7 +38,6 @@ class UserDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
     } yield assembleUser(users, rating)
   }.transact(tr).attemptT.leftMap {
     case e: EnsureException =>
-      log.error(s"get user $userId failed", e)
       UserNotFoundDaoError(userId)
     case t: Throwable =>
       log.error(s"get user $userId failed", t)
@@ -53,9 +52,9 @@ class UserDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
     } yield assembleUser(users, rating)
   }.transact(tr).attemptT.leftMap {
     case e: EnsureException =>
-      log.error(s"get user @$login failed", e)
       UserLoginNotFoundDaoError(login)
     case t: Throwable =>
+      log.error(s"get user @$login failed", t)
       InternalUserDaoError(t.getMessage)
   }
 
@@ -68,20 +67,20 @@ class UserDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
   override def createUser(user: User): EitherT[F, UserDaoError, Unit] =
     create(Users.from(user), UserRating.from(user)).attemptT.leftMap {
       case e: EnsureException =>
-        log.error(s"create user ${user.id} failed", e)
         UserInsertFailedDaoError(user.id)
       case DuplicateKeyException(_) =>
         UserAlreadyExistsDaoError(user.description.login)
       case t: Throwable =>
+        log.error(s"create user ${user.id} failed", t)
         InternalUserDaoError(t.getMessage)
     }
 
   override def updateUser(userId: UserID, updateFunc: User => DaoUpdate[User]): EitherT[F, UserDaoError, User] =
     update(userId, updateFunc).attemptT.leftMap {
       case e: EnsureException =>
-        log.error(s"update user $userId failed", e)
         UserUpdateFailedDaoError(userId)
       case t: Throwable =>
+        log.error(s"update user $userId failed", t)
         InternalUserDaoError(t.getMessage)
     }
 
