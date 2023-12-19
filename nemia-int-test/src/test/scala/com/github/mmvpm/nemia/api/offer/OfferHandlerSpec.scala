@@ -46,7 +46,7 @@ class OfferHandlerSpec
     } yield ()
   }
 
-  it should "return not found when offer id is unknown" in { implicit b =>
+  it should "return 404 if offer is not found" in { implicit b =>
     for {
       nonExistentOfferId <- UUIDGen[IO].randomUUID
       _ <- getOffer(nonExistentOfferId).asserting(_.error.code shouldBe StatusCode.NotFound)

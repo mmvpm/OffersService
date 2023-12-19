@@ -52,7 +52,7 @@ trait UserRequestsSupport extends ConfigSupport {
       mark: Int
     )(implicit backend: SttpBackend[IO, Any]): IO[Either[ApiError, OkResponse]] =
     basicRequest
-      .put(uri"$baseUrl/api/v1/user/rate/$toUserId")
+      .post(uri"$baseUrl/api/v1/user/rate/$toUserId")
       .header(SessionHeaderName, session.toString)
       .body(RateUserRequest(mark))
       .response(asJsonEither[ApiError, OkResponse])

@@ -41,6 +41,7 @@ class UserDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
       log.error(s"get user $userId failed", e)
       UserNotFoundDaoError(userId)
     case t: Throwable =>
+      log.error(s"get user $userId failed", t)
       InternalUserDaoError(t.getMessage)
   }
 

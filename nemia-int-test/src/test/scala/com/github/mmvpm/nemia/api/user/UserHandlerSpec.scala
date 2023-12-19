@@ -35,7 +35,7 @@ class UserHandlerSpec
     } yield ()
   }
 
-  it should "return not found on unknown user" in { implicit b =>
+  it should "return 404 if user is not found" in { implicit b =>
     for {
       nonExistentUserId <- UUIDGen[IO].randomUUID
       _ <- getUser(nonExistentUserId).asserting(_.error.code shouldBe StatusCode.NotFound)
