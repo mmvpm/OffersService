@@ -32,7 +32,7 @@ class AuthHandlerSpec
   it should "create a new user" in { implicit t =>
     for {
       backendStub <- createBackend
-      response = signUp("login", "pass")(config.server, backendStub)
+      response = signUp("login", "pass")(backendStub)
       _ <- response.asserting { case Right(userResponse) =>
         userResponse.user.description.login shouldBe "login"
         userResponse.user.description.login shouldBe "pass"

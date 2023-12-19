@@ -53,7 +53,7 @@ class AuthServiceImplSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers w
 }
 
 trait Fixture {
-  implicit val uuidGen = mock[UUIDGen[IO]]
+  implicit val uuidGen: UUIDGen[IO] = mock[UUIDGen[IO]]
   val userDao = mock[UserDao[IO]]
   val sessionDao = mock[SessionDao[IO]]
   val authService = new AuthServiceImpl[IO](userDao, sessionDao, 0L)

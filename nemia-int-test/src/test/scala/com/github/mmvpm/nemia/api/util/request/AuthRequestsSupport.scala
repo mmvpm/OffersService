@@ -9,21 +9,17 @@ import com.github.mmvpm.nemia.api.request._
 import com.github.mmvpm.nemia.api.response._
 import com.github.mmvpm.nemia.api.util.CirceInstances._
 import com.github.mmvpm.nemia.ServerConfig
-import com.github.mmvpm.nemia.api.util.JsonUtils
+import com.github.mmvpm.nemia.api.util.{ConfigSupport, JsonUtils}
 import sttp.client3.{basicRequest, SttpBackend, UriContext}
 import sttp.client3.circe._
 
-trait AuthRequestsSupport {
+trait AuthRequestsSupport extends ConfigSupport {
 
-  def signUp(
-      login: String,
-      password: String
-    )(config: ServerConfig,
-      backendStub: SttpBackend[IO, Any]): IO[Either[ApiError, UserResponse]] =
+  def signUp(login: String, password: String)(sttpBackend: SttpBackend[IO, Any]): IO[Either[ApiError, UserResponse]] =
     basicRequest
-      .post(uri"${config.host}:${config.port}/api/v1/auth/sign-up")
+      .post(uri"$baseUrl/api/v1/auth/sign-up")
       .body(SignUpRequest(UserDescriptionRaw(login, password)))
       .response(asJsonEither[ApiError, UserResponse])
-      .send(backendStub)
+      .send(sttpBackend)
       .map(_.body.leftMap(JsonUtils.parseFailure))
 }

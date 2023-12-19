@@ -5,5 +5,10 @@ import pureconfig.ConfigSource
 import pureconfig.generic.auto._
 
 trait ConfigSupport {
-  val config: Config = ConfigSource.default.loadOrThrow[Config]
+
+  val config: Config =
+    ConfigSource.default.loadOrThrow[Config]
+
+  val baseUrl: String =
+    s"http://${config.server.host}:${config.server.port}"
 }
