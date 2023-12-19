@@ -1,0 +1,143 @@
+{
+  "data": {
+    "feed": {
+      "items": [
+        {
+          "__typename": "LocationLabelPlacementItem"
+        },
+        {
+          "product": {
+            "id": "649a9953c435925f046587d3",
+            "categoryId": 5,
+            "subcategoryId": 502,
+            "price": {
+              "origPrice": {
+                "price": 100,
+                "__typename": "Price"
+              },
+              "realPrice": {
+                "price": 100,
+                "__typename": "Price"
+              },
+              "realPriceText": "1 ₽",
+              "discount": 0,
+              "__typename": "ProductPrice"
+            },
+            "url": "/sankt-peterburg/zhivotnye/sobaki/sobaka-v-dobryie-ruki-biesplatno-649a9953c435925f046587d3",
+            "images": [
+              {
+                "id": "649a9904d8ffd313693a9bbb-2",
+                "num": 1,
+                "url": "https://cdn1.youla.io/files/images/orig/64/9a/649a9904d8ffd313693a9bbb-2.jpg",
+                "__typename": "Image"
+              }
+            ],
+            "name": "Собака в добрые руки бесплатно",
+            "location": {
+              "cityName": "Санкт-Петербург",
+              "city": "576d0612d53f3d80945f8b5e",
+              "addressText": "",
+              "description": "",
+              "latitude": 0,
+              "longitude": 0,
+              "__typename": "Location"
+            },
+            "distanceText": "Санкт-Петербург",
+            "isPromoted": false,
+            "favorite": {
+              "enabled": false,
+              "__typename": "ProductFavorite"
+            },
+            "deliveryAvailable": false,
+            "paymentAvailable": false,
+            "branding": null,
+            "salaryText": "",
+            "__typename": "Product"
+          },
+          "productAnalytics": {
+            "promotionType": 0,
+            "__typename": "ProductAnalytics"
+          },
+          "__typename": "ProductItem"
+        },
+        {
+          "product": {
+            "id": "648c01f3ea4d2477335a14c3",
+            "categoryId": 5,
+            "subcategoryId": 502,
+            "price": {
+              "origPrice": {
+                "price": 100,
+                "__typename": "Price"
+              },
+              "realPrice": {
+                "price": 100,
+                "__typename": "Price"
+              },
+              "realPriceText": "1 ₽",
+              "discount": 0,
+              "__typename": "ProductPrice"
+            },
+            "url": "/all/zhivotnye/sobaki/sobaka-v-dobryie-ruki-648c01f3ea4d2477335a14c3",
+            "images": [
+              {
+                "id": "648c01d06a6e5365f538a66a-1",
+                "num": 1,
+                "url": "https://cdn0.youla.io/files/images/orig/64/8c/648c01d06a6e5365f538a66a-1.jpg",
+                "__typename": "Image"
+              }
+            ],
+            "name": "Собака в добрые руки",
+            "location": {
+              "cityName": "Санкт-Петербург",
+              "city": "576d0612d53f3d80945f8b5e",
+              "addressText": "",
+              "description": "",
+              "latitude": 0,
+              "longitude": 0,
+              "__typename": "Location"
+            },
+            "distanceText": "Санкт-Петербург",
+            "isPromoted": false,
+            "favorite": {
+              "enabled": false,
+              "__typename": "ProductFavorite"
+            },
+            "deliveryAvailable": false,
+            "paymentAvailable": false,
+            "branding": null,
+            "salaryText": "",
+            "__typename": "Product"
+          },
+          "productAnalytics": {
+            "promotionType": 0,
+            "__typename": "ProductAnalytics"
+          },
+          "__typename": "ProductItem"
+        }
+      ],
+      "pageInfo": {
+        "cursor": "{\"page\":0,\"totalProductsCount\":30,\"dateUpdatedTo\":1702855291}",
+        "hasNextPage": true,
+        "personalSearchId": null,
+        "productsAnalytics": {
+          "searchId": "93bf10e5f9701c79b239bafe7f4d026b",
+          "__typename": "AllProductsAnalytics"
+        },
+        "__typename": "PageInfo"
+      },
+      "__typename": "Feed"
+    }
+  },
+  "extensions": {
+    "tracing": {
+      "version": 1,
+      "startTime": "2023-12-17T23:21:31.342Z",
+      "endTime": "2023-12-17T23:21:31.554Z",
+      "duration": 211517690,
+      "execution": {
+        "resolvers": []
+      }
+    }
+  }
+}
