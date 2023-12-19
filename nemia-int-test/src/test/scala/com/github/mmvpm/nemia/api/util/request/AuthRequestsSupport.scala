@@ -32,7 +32,7 @@ trait AuthRequestsSupport extends ConfigSupport {
 
   def whoami(session: Session)(backend: SttpBackend[IO, Any]): IO[Either[ApiError, UserIdResponse]] =
     basicRequest
-      .get(uri"$baseUrl/api/v1/auth/whoami?$session")
+      .get(uri"$baseUrl/api/v1/auth/whoami/$session")
       .response(asJsonEither[ApiError, UserIdResponse])
       .send(backend)
       .map(_.body.leftMap(JsonUtils.parseFailure))
