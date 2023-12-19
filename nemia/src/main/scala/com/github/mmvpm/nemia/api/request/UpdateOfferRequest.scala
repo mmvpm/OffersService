@@ -6,4 +6,5 @@ case class UpdateOfferRequest(
     name: Option[String] = None,
     price: Option[Money] = None,
     text: Option[String] = None,
-    photos: Option[List[Photo]] = None)
+    photos: Option[List[Photo]] = None
+)

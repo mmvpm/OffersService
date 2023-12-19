@@ -1,7 +1,3 @@
 package com.github.mmvpm.model
 
-case class OfferDescription(
-    name: String,
-    price: Money,
-    text: String,
-    photos: List[Photo])
+case class OfferDescription(name: String, price: Money, text: String, photos: List[Photo])

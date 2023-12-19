@@ -14,7 +14,8 @@ case class Offers(
     text: String,
     status: OfferStatus,
     createdAt: Instant,
-    updatedAt: Instant) {
+    updatedAt: Instant
+) {
 
   def toOffer: Offer =
     Offer(id, userId, OfferDescription(name, price, text, List()), status, createdAt, updatedAt)

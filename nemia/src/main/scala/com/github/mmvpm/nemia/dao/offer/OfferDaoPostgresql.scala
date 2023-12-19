@@ -13,7 +13,7 @@ import com.github.mmvpm.model.{Offer, OfferID, UserID}
 import com.github.mmvpm.nemia.dao.error._
 import com.github.mmvpm.nemia.dao.util.ThrowableUtils.DuplicateKeyException
 import com.github.mmvpm.util.Logging
-import com.github.mmvpm.util.MonadUtils.{ensure, EnsureException}
+import com.github.mmvpm.util.MonadUtils.{EnsureException, ensure}
 import doobie.free.connection.ConnectionOp
 import doobie.implicits._
 import doobie.util.transactor.Transactor
@@ -23,9 +23,9 @@ import io.getquill.SnakeCase
 import io.getquill.mirrorContextWithQueryProbing.transaction
 
 class OfferDaoPostgresql[F[_]: MonadCancelThrow: Monad](implicit val tr: Transactor[F])
-  extends OfferDao[F]
-  with QuillSupport
-  with Logging {
+    extends OfferDao[F]
+    with QuillSupport
+    with Logging {
 
   private val ctx = new DoobieContext.Postgres(SnakeCase)
   import ctx._
@@ -84,7 +84,7 @@ class OfferDaoPostgresql[F[_]: MonadCancelThrow: Monad](implicit val tr: Transac
       dbOfferPhotos <- run(query[OfferPhotos].filter(_.offerId == lift(offerId)))
       offer = assembleOffer(dbOffer.single, dbOfferPhotos)
       updatedOffer <- updateFunc(offer) match {
-        case DoNothing => Free.pure[ConnectionOp, Offer](offer)
+        case DoNothing         => Free.pure[ConnectionOp, Offer](offer)
         case SaveNew(newOffer) => updateRaw(offerId, newOffer)
       }
     } yield updatedOffer

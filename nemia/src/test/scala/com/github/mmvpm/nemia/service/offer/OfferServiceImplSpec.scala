@@ -67,7 +67,6 @@ class OfferServiceImplSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers 
     )
 }
 
-
 trait Fixture {
   val offerDao = mock[OfferDao[IO]]
   val offerService = new OfferServiceImpl[IO](offerDao)

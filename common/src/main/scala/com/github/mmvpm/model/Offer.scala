@@ -10,4 +10,5 @@ case class Offer(
     description: OfferDescription,
     status: OfferStatus,
     createdAt: Instant,
-    updatedAt: Instant)
+    updatedAt: Instant
+)

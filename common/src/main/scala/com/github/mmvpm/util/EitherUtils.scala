@@ -11,7 +11,7 @@ object EitherUtils {
   def safe[F[_]: Sync, A](block: => A): EitherT[F, String, A] =
     EitherT(Sync[F].delay(Try(block).toEither)).leftMap(_.getMessage)
 
-  def safeBlocking[F[_] : Sync, A](block: => A): EitherT[F, String, A] =
+  def safeBlocking[F[_]: Sync, A](block: => A): EitherT[F, String, A] =
     EitherT(Sync[F].blocking(Try(block).toEither)).leftMap(_.getMessage)
 
   def sleep[F[_]: Sync](delay: FiniteDuration): EitherT[F, String, Unit] =

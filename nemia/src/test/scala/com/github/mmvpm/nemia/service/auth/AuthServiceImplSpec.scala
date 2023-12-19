@@ -3,7 +3,7 @@ package com.github.mmvpm.nemia.service.auth
 
 import cats.data.EitherT
 import cats.effect.testing.scalatest.AsyncIOSpec
-import cats.effect.{std, IO}
+import cats.effect.{IO, std}
 import cats.effect.std.UUIDGen
 import com.github.mmvpm.model.{UserID, UserStatus}
 import com.github.mmvpm.nemia.api.error.InvalidSessionApiError

@@ -36,9 +36,10 @@ object Main extends IOApp {
       random <- Random.scalaUtilRandom[IO]
       redis = new RedisClient(config.redis.host, config.redis.port)
 
-      offerDao: OfferDao[IO] = new OfferDaoPostgresql[IO] // new OfferDaoInMemory[IO]
-      sessionDao: SessionDao[IO] = new SessionDaoRedis[IO](redis, config.session.expiration.toSeconds) // new SessionDaoInMemory[IO]
-      userDao: UserDao[IO] = new UserDaoPostgresql[IO] // new UserDaoInMemory[IO]
+      offerDao: OfferDao[IO] = new OfferDaoPostgresql[IO]
+      sessionDao: SessionDao[IO] = new SessionDaoRedis[IO](redis, config.session.expiration.toSeconds)
+      userDao: UserDao[IO] = new UserDaoPostgresql[IO]
+
       authService: AuthService[IO] = new AuthServiceImpl[IO](userDao, sessionDao, config.session.expiration.toSeconds)
       offerService: OfferService[IO] = new OfferServiceImpl[IO](offerDao)
       userService: UserService[IO] = new UserServiceImpl[IO](userDao, random)
@@ -55,7 +56,7 @@ object Main extends IOApp {
 
       _ <- server.build.use { server =>
         for {
-          _ <- IO.println(s"Go to http://${server.address.getHostName}:${server.address.getPort}/docs to open SwaggerUI")
+          _ <- IO.println(s"SwaggerUI: http://${server.address.getHostName}:${server.address.getPort}/docs")
           _ <- IO.readLine
         } yield ()
       }

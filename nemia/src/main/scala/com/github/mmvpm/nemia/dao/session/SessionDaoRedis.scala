@@ -12,9 +12,9 @@ import com.redis._
 import java.util.UUID
 import scala.util.Try
 
-class SessionDaoRedis[F[_] : Sync](redis: RedisClient, SessionExpirationSeconds: Long)
-  extends SessionDao[F]
-  with Logging {
+class SessionDaoRedis[F[_]: Sync](redis: RedisClient, SessionExpirationSeconds: Long)
+    extends SessionDao[F]
+    with Logging {
 
   override def getUserId(session: Session): EitherT[F, SessionDaoError, UserID] =
     for {

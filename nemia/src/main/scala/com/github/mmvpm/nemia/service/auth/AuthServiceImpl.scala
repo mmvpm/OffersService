@@ -19,8 +19,8 @@ import java.time.Instant
 class AuthServiceImpl[F[_]: Monad: Clock: UUIDGen](
     userDao: UserDao[F],
     sessionDao: SessionDao[F],
-    SessionExpirationSeconds: Long)
-  extends AuthService[F] {
+    SessionExpirationSeconds: Long
+) extends AuthService[F] {
 
   override def checkPassword(login: String, password: String): EitherT[F, ApiError, UserID] =
     (for {
@@ -60,16 +60,18 @@ object AuthServiceImpl {
 
   import com.github.mmvpm.nemia.service.user.UserServiceImpl.userConversion
 
-  private[service] implicit class RichAuthResponse[F[_]: Functor, T, Error <: DaoError](response: EitherT[F, Error, T]) {
+  private[service] implicit class RichAuthResponse[F[_]: Functor, T, Error <: DaoError](
+      response: EitherT[F, Error, T]
+  ) {
     def convertError: EitherT[F, ApiError, T] =
       response.leftMap {
         case e: SessionDaoError => sessionConversion(e)
-        case e: UserDaoError => userConversion(e)
+        case e: UserDaoError    => userConversion(e)
       }
   }
 
   private[service] def sessionConversion: SessionDaoError => ApiError = {
     case SessionNotFoundDaoError(session) => InvalidSessionApiError(session)
-    case error => SessionDaoInternalApiError(error.details)
+    case error                            => SessionDaoInternalApiError(error.details)
   }
 }

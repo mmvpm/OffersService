@@ -17,9 +17,9 @@ class PageProducerImpl[F[_]: Monad: Sync](
     pageQueueWriter: PageQueueWriter[F],
     youlaClient: YoulaClient[F],
     queryGenerator: QueryGenerator[F],
-    catalogConverter: CatalogConverter)
-  extends PageProducer[F]
-  with Logging {
+    catalogConverter: CatalogConverter
+) extends PageProducer[F]
+    with Logging {
 
   override def run: EitherT[F, String, Unit] =
     EitherT(Monad[F].iterateWhile(one.value)(_.isRight))

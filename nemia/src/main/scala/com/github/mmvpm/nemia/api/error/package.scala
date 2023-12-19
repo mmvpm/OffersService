@@ -98,11 +98,13 @@ package object error {
     private def schemaCode(code: Int) = Schema(SInteger[AnyVal]()).format("int32").default(code)
 
     private def schema[Error <: ApiError](code: Int): Schema[Error] = Schema(
-      schemaType = SProduct(List(
-        SProductField(FieldName("id"), Schema.schemaForString, e => Some(e.id)),
-        SProductField(FieldName("code"), schemaCode(code), e => Some(e.code)),
-        SProductField(FieldName("details"), Schema.schemaForString, e => Some(e.details))
-      ))
+      schemaType = SProduct(
+        List(
+          SProductField(FieldName("id"), Schema.schemaForString, e => Some(e.id)),
+          SProductField(FieldName("code"), schemaCode(code), e => Some(e.code)),
+          SProductField(FieldName("details"), Schema.schemaForString, e => Some(e.details))
+        )
+      )
     )
   }
 

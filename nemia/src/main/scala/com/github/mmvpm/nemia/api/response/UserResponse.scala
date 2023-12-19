@@ -18,7 +18,8 @@ case class ApiUser(
     description: ApiUserDescription,
     status: UserStatus,
     rating: Rating,
-    registeredAt: Instant)
+    registeredAt: Instant
+)
 
 object ApiUser {
 
@@ -26,10 +27,7 @@ object ApiUser {
     ApiUser(user.id, ApiUserDescription.from(user.description), user.status, user.rating, user.registeredAt)
 }
 
-case class ApiUserDescription(
-    login: String,
-    email: Option[Email] = None,
-    phone: Option[Phone] = None)
+case class ApiUserDescription(login: String, email: Option[Email] = None, phone: Option[Phone] = None)
 
 object ApiUserDescription {
 

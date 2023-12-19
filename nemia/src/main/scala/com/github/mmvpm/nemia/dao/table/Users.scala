@@ -13,7 +13,8 @@ case class Users(
     email: Option[Email],
     phone: Option[Phone],
     status: UserStatus,
-    registeredAt: Instant) {
+    registeredAt: Instant
+) {
 
   def toUser: User =
     User(

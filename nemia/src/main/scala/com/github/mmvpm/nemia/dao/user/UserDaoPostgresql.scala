@@ -13,7 +13,7 @@ import com.github.mmvpm.model.UserStatus.UserStatus
 import com.github.mmvpm.nemia.dao.error._
 import com.github.mmvpm.nemia.dao.util.ThrowableUtils.DuplicateKeyException
 import com.github.mmvpm.util.Logging
-import com.github.mmvpm.util.MonadUtils.{ensure, EnsureException}
+import com.github.mmvpm.util.MonadUtils.{EnsureException, ensure}
 import doobie.free.connection.ConnectionOp
 import doobie.implicits._
 import doobie.util.transactor.Transactor
@@ -23,9 +23,9 @@ import io.getquill.SnakeCase
 import io.getquill.mirrorContextWithQueryProbing.transaction
 
 class UserDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
-  extends UserDao[F]
-  with QuillSupport
-  with Logging {
+    extends UserDao[F]
+    with QuillSupport
+    with Logging {
 
   private val ctx = new DoobieContext.Postgres(SnakeCase)
   import ctx._
@@ -106,7 +106,7 @@ class UserDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
       dbUserRating <- run(query[UserRating].filter(_.toUserId == lift(userId)))
       newUser = assembleUser(dbUser, dbUserRating)
       updateDbUser <- updateFunc(newUser) match {
-        case DoNothing => Free.pure[ConnectionOp, User](newUser)
+        case DoNothing        => Free.pure[ConnectionOp, User](newUser)
         case SaveNew(newUser) => updateRaw(userId, newUser)
       }
     } yield updateDbUser

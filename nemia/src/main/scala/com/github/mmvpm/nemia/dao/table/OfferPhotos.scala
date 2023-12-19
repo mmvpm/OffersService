@@ -4,9 +4,7 @@ import com.github.mmvpm.model.{Offer, OfferID, Photo}
 
 import java.net.URL
 
-case class OfferPhotos(
-    offerId: OfferID,
-    photoUrl: URL)
+case class OfferPhotos(offerId: OfferID, photoUrl: URL)
 
 object OfferPhotos {
 

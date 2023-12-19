@@ -70,7 +70,6 @@ class UserServiceImplSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers w
   }
 }
 
-
 trait Fixture {
   val random = mock[Random[IO]]
   val userDao = mock[UserDao[IO]]

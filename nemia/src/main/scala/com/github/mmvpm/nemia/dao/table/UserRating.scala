@@ -2,10 +2,7 @@ package com.github.mmvpm.nemia.dao.table
 
 import com.github.mmvpm.model.{Mark, Rating, User, UserID}
 
-case class UserRating(
-    fromUserId: UserID,
-    toUserId: UserID,
-    mark: Int)
+case class UserRating(fromUserId: UserID, toUserId: UserID, mark: Int)
 
 object UserRating {
 

@@ -18,6 +18,6 @@ trait YoulaTestCatalogSupport {
 
   val youlaTestCatalogUrls: Set[String] = Set(
     "/all/zhivotnye/sobaki/sobaka-v-dobryie-ruki-648c01f3ea4d2477335a14c3",
-    "/sankt-peterburg/zhivotnye/sobaki/sobaka-v-dobryie-ruki-biesplatno-649a9953c435925f046587d3",
+    "/sankt-peterburg/zhivotnye/sobaki/sobaka-v-dobryie-ruki-biesplatno-649a9953c435925f046587d3"
   )
 }

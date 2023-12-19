@@ -1,9 +1,6 @@
 package com.github.mmvpm.parseidon.client.youla.request
 
-case class CatalogRequest(
-    operationName: String,
-    variables: Variables,
-    extensions: Extensions)
+case class CatalogRequest(operationName: String, variables: Variables, extensions: Extensions)
 
 object CatalogRequest {
 

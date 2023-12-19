@@ -5,7 +5,7 @@ import com.github.mmvpm.nemia.api.SessionHeaderName
 import com.github.mmvpm.nemia.api.error.ApiError
 import com.github.mmvpm.nemia.service.auth.AuthService
 import sttp.model.headers.WWWAuthenticateChallenge
-import sttp.tapir.{auth, header, Endpoint, PublicEndpoint}
+import sttp.tapir.{Endpoint, PublicEndpoint, auth, header}
 import sttp.tapir.server.PartialServerEndpoint
 
 trait AuthSessionSupport[F[_]] {
@@ -16,7 +16,9 @@ trait AuthSessionSupport[F[_]] {
     def withSession: PartialServerEndpoint[Session, UserID, Unit, ApiError, Unit, Any, F] = authorized(endpoint)
   }
 
-  private def authorized(endpoint: PublicEndpoint[Unit, ApiError, Unit, Any]): PartialServerEndpoint[Session, UserID, Unit, ApiError, Unit, Any, F] =
+  private def authorized(
+      endpoint: PublicEndpoint[Unit, ApiError, Unit, Any]
+  ): PartialServerEndpoint[Session, UserID, Unit, ApiError, Unit, Any, F] =
     endpoint
       // Use `header[Session]` instead of `cookie[Session]` due to this swagger issue:
       // https://stackoverflow.com/questions/49272171/sending-cookie-session-id-with-swagger-3-0

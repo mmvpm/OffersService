@@ -16,14 +16,14 @@ trait ApiErrorSupport {
   private def wrapErrors(endpoint: PublicEndpoint[Unit, Unit, Unit, Any]): PublicEndpoint[Unit, ApiError, Unit, Any] =
     endpoint.errorOut(
       oneOf[ApiError](
-        oneOfVariantValueMatcher(StatusCode.BadRequest, jsonBody[BadRequestApiError]) {
-          case _: BadRequestApiError => true
+        oneOfVariantValueMatcher(StatusCode.BadRequest, jsonBody[BadRequestApiError]) { case _: BadRequestApiError =>
+          true
         },
         oneOfVariantValueMatcher(StatusCode.Unauthorized, jsonBody[UnauthorizedApiError]) {
           case _: UnauthorizedApiError => true
         },
-        oneOfVariantValueMatcher(StatusCode.NotFound, jsonBody[NotFoundApiError]) {
-          case _: NotFoundApiError => true
+        oneOfVariantValueMatcher(StatusCode.NotFound, jsonBody[NotFoundApiError]) { case _: NotFoundApiError =>
+          true
         },
         oneOfVariantValueMatcher(StatusCode.InternalServerError, jsonBody[InternalApiError]) {
           case _: InternalApiError => true

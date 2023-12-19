@@ -5,7 +5,7 @@ import cats.effect.std.Random
 import com.github.mmvpm.parseidon.client.nemia.{NemiaClient, NemiaClientSttp}
 import com.github.mmvpm.parseidon.client.youla.{YoulaClient, YoulaClientSttp}
 import com.github.mmvpm.parseidon.consumer.{PageConsumer, PageConsumerImpl}
-import com.github.mmvpm.parseidon.dao.queue.{PageQueueReader, PageQueueReaderRedis, PageQueueWriter, PageQueueWriterRedis}
+import com.github.mmvpm.parseidon.dao.queue._
 import com.github.mmvpm.parseidon.dao.util.RedisClientFactory
 import com.github.mmvpm.parseidon.dao.visited.{PageVisitedDao, PageVisitedDaoRedis}
 import com.github.mmvpm.parseidon.parser.{PageParser, PageParserJsoup}
@@ -66,11 +66,10 @@ object Main extends IOApp with Logging {
 
       result <- IO.race(pageConsumer.run.value, pageProducer.run.value)
       _ = result match {
-        case Left(Left(error)) => log.error(s"Consumer failed: $error")
+        case Left(Left(error))  => log.error(s"Consumer failed: $error")
         case Right(Left(error)) => log.error(s"Producer failed: $error")
-        case _ => log.info(s"Parser stopped")
+        case _                  => log.info(s"Parser stopped")
       }
     } yield ()
-
 
 }

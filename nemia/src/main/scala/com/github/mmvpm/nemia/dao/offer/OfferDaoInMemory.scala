@@ -35,10 +35,11 @@ class OfferDaoInMemory[F[_]: Monad: Sync] extends OfferDao[F] {
       newOffer <- EitherT.liftF {
         updateFunc(offer) match {
           case DaoUpdate.DoNothing => Monad[F].pure(offer)
-          case DaoUpdate.SaveNew(newOffer) => Sync[F].delay {
-            storage.update(storage.indexOf(offer), newOffer)
-            newOffer
-          }
+          case DaoUpdate.SaveNew(newOffer) =>
+            Sync[F].delay {
+              storage.update(storage.indexOf(offer), newOffer)
+              newOffer
+            }
         }
       }
     } yield newOffer

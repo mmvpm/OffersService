@@ -13,7 +13,7 @@ import com.github.mmvpm.nemia.api.error._
 import com.github.mmvpm.nemia.dao.error._
 import com.github.mmvpm.nemia.service.offer.OfferServiceImpl._
 
-class OfferServiceImpl[F[_]: Monad : Clock : UUIDGen](offerDao: OfferDao[F]) extends OfferService[F] {
+class OfferServiceImpl[F[_]: Monad: Clock: UUIDGen](offerDao: OfferDao[F]) extends OfferService[F] {
 
   override def getOffer(offerId: OfferID): EitherT[F, ApiError, OfferResponse] =
     getOfferRaw(offerId).map(OfferResponse).convertError
@@ -32,7 +32,8 @@ class OfferServiceImpl[F[_]: Monad : Clock : UUIDGen](offerDao: OfferDao[F]) ext
   override def updateOffer(
       userId: UserID,
       offerId: OfferID,
-      request: UpdateOfferRequest): EitherT[F, ApiError, OfferResponse] =
+      request: UpdateOfferRequest
+  ): EitherT[F, ApiError, OfferResponse] =
     (for {
       offer <- getOfferRaw(offerId)
       _ <- checkOfferBelonging(userId, offer)
@@ -83,9 +84,9 @@ object OfferServiceImpl {
   }
 
   private[service] def offerConversion: OfferDaoError => ApiError = {
-    case OfferNotFoundDaoError(offerId) => OfferNotFoundApiError(offerId)
-    case OfferAlreadyExistsDaoError(offerId) => OfferAlreadyExistsApiError(offerId)
+    case OfferNotFoundDaoError(offerId)           => OfferNotFoundApiError(offerId)
+    case OfferAlreadyExistsDaoError(offerId)      => OfferAlreadyExistsApiError(offerId)
     case OfferBelongingFailedDaoError(offerId, _) => OfferNotFoundApiError(offerId)
-    case error => OfferDaoInternalApiError(error.details)
+    case error                                    => OfferDaoInternalApiError(error.details)
   }
 }

@@ -12,13 +12,11 @@ import com.github.mmvpm.parseidon.client.SessionHeaderName
 import com.github.mmvpm.parseidon.client.nemia.error._
 import io.circe.generic.auto._
 import io.circe.Error
-import sttp.client3.{asEither, basicRequest, DeserializationException, HttpError, ResponseException, SttpBackend, UriContext}
+import sttp.client3._
 import sttp.client3.circe._
 
-class NemiaClientSttp[F[_]: MonadThrow](
-    nemiaConfig: NemiaConfig,
-    sttpBackend: SttpBackend[F, Any])
-  extends NemiaClient[F] {
+class NemiaClientSttp[F[_]: MonadThrow](nemiaConfig: NemiaConfig, sttpBackend: SttpBackend[F, Any])
+    extends NemiaClient[F] {
 
   override def signUp(user: UserDescriptionRaw): EitherT[F, NemiaError, SignUpResponse] = {
     val requestUri = uri"${nemiaConfig.baseUrl}/api/v1/auth/sign-up"
@@ -52,7 +50,8 @@ class NemiaClientSttp[F[_]: MonadThrow](
 
   override def createOffer(
       session: Session,
-      description: OfferDescription): EitherT[F, NemiaError, CreateOfferResponse] = {
+      description: OfferDescription
+  ): EitherT[F, NemiaError, CreateOfferResponse] = {
     val requestUri = uri"${nemiaConfig.baseUrl}/api/v1/offer"
     val request = CreateOfferRequest(description)
 
@@ -71,6 +70,6 @@ class NemiaClientSttp[F[_]: MonadThrow](
   private def parseFailure(error: ResponseException[NemiaApiError, Error]): NemiaError =
     error match {
       case HttpError(body, _) => body
-      case _ => NemiaUnknownError(error.getMessage)
+      case _                  => NemiaUnknownError(error.getMessage)
     }
 }

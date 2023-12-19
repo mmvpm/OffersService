@@ -2,10 +2,7 @@ package com.github.mmvpm.parseidon
 
 import scala.concurrent.duration.FiniteDuration
 
-case class Config(
-    redis: RedisConfig,
-    nemia: NemiaConfig,
-    youla: YoulaConfig)
+case class Config(redis: RedisConfig, nemia: NemiaConfig, youla: YoulaConfig)
 
 case class RedisConfig(host: String, port: Int)
 
@@ -19,4 +16,5 @@ case class YoulaConfig(
     pageRequestDelay: FiniteDuration,
     sha256: String,
     xAppId: String,
-    xUid: String)
+    xUid: String
+)

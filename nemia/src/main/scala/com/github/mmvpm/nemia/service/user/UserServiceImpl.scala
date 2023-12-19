@@ -38,7 +38,8 @@ class UserServiceImpl[F[_]: Monad: Clock: UUIDGen](userDao: UserDao[F], random: 
   override def rateUser(
       fromUserId: UserID,
       toUserId: UserID,
-      request: RateUserRequest): EitherT[F, ApiError, OkResponse] =
+      request: RateUserRequest
+  ): EitherT[F, ApiError, OkResponse] =
     (for {
       validMark <- EitherT.pure(1 <= request.mark && request.mark <= 10)
       _ <- EitherT.cond(validMark, (), UserValidationError(s"mark ${request.mark} is not in 1..10"))
@@ -90,10 +91,10 @@ object UserServiceImpl {
   }
 
   private[service] def userConversion: UserDaoError => ApiError = {
-    case UserNotFoundDaoError(userId) => UserNotFoundApiError(userId)
+    case UserNotFoundDaoError(userId)     => UserNotFoundApiError(userId)
     case UserLoginNotFoundDaoError(login) => UserLoginNotFoundApiError(login)
     case UserAlreadyExistsDaoError(login) => UserAlreadyExistsApiError(login)
-    case UserValidationError(details) => UserValidationApiError(details)
-    case error => UserDaoInternalApiError(error.details)
+    case UserValidationError(details)     => UserValidationApiError(details)
+    case error                            => UserDaoInternalApiError(error.details)
   }
 }

@@ -22,9 +22,9 @@ class PageConsumerImpl[F[_]: Monad: Sync](
     pageVisitedDao: PageVisitedDao[F],
     pageQueueReader: PageQueueReader[F],
     pageParser: PageParser[F],
-    nemiaClient: NemiaClient[F])
-  extends PageConsumer[F]
-  with Logging {
+    nemiaClient: NemiaClient[F]
+) extends PageConsumer[F]
+    with Logging {
 
   override def run: EitherT[F, String, Unit] =
     EitherT(Monad[F].iterateWhile(one.value)(_.isRight))
@@ -71,10 +71,9 @@ object PageConsumerImpl {
 
   private val NemiaUserPasswordSalt = "password"
 
-  /**
-   * To simplify the service, we don't save the conversion "youla-user-id" -> "generated-password".
-   * Instead, we get a password by "youla-user-id" using a simple deterministic algorithm.
-   */
+  /** To simplify the service, we don't save the conversion "youla-user-id" -> "generated-password". Instead, we get a
+    * password by "youla-user-id" using a simple deterministic algorithm.
+    */
   private def getPassword(user: YoulaUser): String =
     DigestUtils.md5Hex(user.id + user.name + NemiaUserPasswordSalt)
 }

@@ -7,11 +7,10 @@ import com.github.mmvpm.parseidon.YoulaConfig
 import com.github.mmvpm.parseidon.client.youla.request.CatalogRequest
 import com.github.mmvpm.parseidon.client.youla.response.CatalogResponse
 import io.circe.generic.auto._
-import sttp.client3.{basicRequest, SttpBackend, UriContext}
+import sttp.client3.{SttpBackend, UriContext, basicRequest}
 import sttp.client3.circe._
 
-class YoulaClientSttp[F[_]: MonadThrow](config: YoulaConfig, sttpBackend: SttpBackend[F, Any])
-  extends YoulaClient[F] {
+class YoulaClientSttp[F[_]: MonadThrow](config: YoulaConfig, sttpBackend: SttpBackend[F, Any]) extends YoulaClient[F] {
 
   override def search(query: String): EitherT[F, String, CatalogResponse] = {
     val requestUri = uri"${config.graphqlUrl}"

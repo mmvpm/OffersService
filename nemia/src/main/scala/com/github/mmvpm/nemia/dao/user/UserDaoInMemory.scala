@@ -33,10 +33,11 @@ class UserDaoInMemory[F[_]: Monad: Sync] extends UserDao[F] {
       newUser <- EitherT.liftF {
         updateFunc(user) match {
           case DaoUpdate.DoNothing => Monad[F].pure(user)
-          case DaoUpdate.SaveNew(newUser) => Sync[F].delay {
-            storageUsers.update(storageUsers.indexOf(user), newUser)
-            newUser
-          }
+          case DaoUpdate.SaveNew(newUser) =>
+            Sync[F].delay {
+              storageUsers.update(storageUsers.indexOf(user), newUser)
+              newUser
+            }
         }
       }
     } yield newUser

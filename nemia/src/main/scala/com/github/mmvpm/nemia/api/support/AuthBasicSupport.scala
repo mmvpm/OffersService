@@ -4,7 +4,7 @@ import com.github.mmvpm.model.UserID
 import com.github.mmvpm.nemia.api.error.ApiError
 import com.github.mmvpm.nemia.service.auth.AuthService
 import sttp.model.headers.WWWAuthenticateChallenge
-import sttp.tapir.{auth, PublicEndpoint}
+import sttp.tapir.{PublicEndpoint, auth}
 import sttp.tapir.model.UsernamePassword
 import sttp.tapir.server.PartialServerEndpoint
 
@@ -19,7 +19,8 @@ trait AuthBasicSupport[F[_]] {
   }
 
   private def authorized(
-      endpoint: PublicEndpoint[Unit, ApiError, Unit, Any]): PartialServerEndpoint[UsernamePassword, UserID, Unit, ApiError, Unit, Any, F] =
+      endpoint: PublicEndpoint[Unit, ApiError, Unit, Any]
+  ): PartialServerEndpoint[UsernamePassword, UserID, Unit, ApiError, Unit, Any, F] =
     endpoint
       .securityIn(auth.basic[UsernamePassword](WWWAuthenticateChallenge.basic("basic-auth")))
       .serverSecurityLogic[UserID, F] { credentials =>

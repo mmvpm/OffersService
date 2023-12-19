@@ -2,11 +2,7 @@ package com.github.mmvpm.nemia
 
 import scala.concurrent.duration.FiniteDuration
 
-case class Config(
-    server: ServerConfig,
-    session: SessionConfig,
-    postgresql: PostgresqlConfig,
-    redis: RedisConfig)
+case class Config(server: ServerConfig, session: SessionConfig, postgresql: PostgresqlConfig, redis: RedisConfig)
 
 case class ServerConfig(host: String, port: Int)
 
