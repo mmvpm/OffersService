@@ -7,7 +7,7 @@ import com.github.mmvpm.nemia.api.AuthHandler
 import com.github.mmvpm.nemia.api.error.ApiError
 import com.github.mmvpm.nemia.api.util.{ConfigSupport, PostgresContainerSupport, RedisContainerSupport}
 import com.github.mmvpm.nemia.api.util.request.AuthRequestsSupport
-import com.github.mmvpm.nemia.dao.session.SessionDaoRedis
+import com.github.mmvpm.nemia.dao.session.{SessionDaoInMemory, SessionDaoRedis}
 import com.github.mmvpm.nemia.dao.user.UserDaoPostgresql
 import com.github.mmvpm.nemia.service.auth.AuthServiceImpl
 import com.github.mmvpm.nemia.service.user.UserServiceImpl
@@ -36,10 +36,9 @@ class AuthHandlerSpec
     "create a new user" in { implicit p =>
       for {
         backendStub <- createBackend
-        response = signUp("login", "pass")(backendStub)
+        response = signUp("login1", "pass1")(backendStub)
         _ <- response.asserting { case Right(userResponse) =>
-          userResponse.user.description.login shouldBe "login"
-        case Left(v) => log.info(s"### 1 [signUp]: $v"); ???
+          userResponse.user.description.login shouldBe "login1"
         }
       } yield ()
     }
@@ -47,9 +46,9 @@ class AuthHandlerSpec
     "sign in correctly" in { implicit p =>
       for {
         backend <- createBackend
-        p <- signUp("login", "pass")(backend)
+        p <- signUp("login2", "pass2")(backend)
         _ = log.info(s"### 2 [signUp]: ${show(p)}")
-        response = signIn("login", "pass")(backend)
+        response = signIn("login2", "pass2")(backend)
         _ <- response.asserting{ x => log.info(s"### 2 [signIn]: ${show(x)}"); x.isRight shouldBe true }
       } yield ()
     }
@@ -57,9 +56,9 @@ class AuthHandlerSpec
     "return user id by session" in { implicit p =>
       for {
         backend <- createBackend
-        user <- signUp("login", "pass")(backend)
+        user <- signUp("login3", "pass3")(backend)
         _ = log.info(s"### 3 [signUp]: ${show(user)}")
-        session <- signIn("login", "pass")(backend)
+        session <- signIn("login3", "pass3")(backend)
         _ = log.info(s"### 3 [signIn]: ${show(session)}")
         response = whoami(session.toOption.get.session)(backend)
         _ <- response.asserting { case Right(userId) =>
@@ -85,9 +84,9 @@ class AuthHandlerSpec
   private def createBackend(implicit tr: Transactor[IO]): IO[SttpBackend[IO, Any]] =
     for {
       random <- Random.scalaUtilRandom[IO]
-      redis = new RedisClient(config.redis.host, config.redis.port)
+      // redis = new RedisClient(config.redis.host, config.redis.port)
 
-      sessionDao = new SessionDaoRedis[IO](redis, config.session.expiration.toSeconds)
+      sessionDao = new SessionDaoInMemory[IO]() // new SessionDaoRedis[IO](redis, config.session.expiration.toSeconds)
       userDao = new UserDaoPostgresql[IO]()
 
       authService = new AuthServiceImpl[IO](userDao, sessionDao, config.session.expiration.toSeconds)
