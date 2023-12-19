@@ -2,7 +2,7 @@ package com.github.mmvpm.nemia.api.util
 
 import cats.effect.{IO, Resource}
 import com.dimafeng.testcontainers.PostgreSQLContainer
-import com.github.mmvpm.nemia.Config
+import com.github.mmvpm.nemia.PostgresqlConfig
 import com.github.mmvpm.nemia.dao.util.FlywayMigration
 import com.github.mmvpm.nemia.dao.util.Postgresql.makeTransactor
 import doobie.Transactor
@@ -11,11 +11,17 @@ import org.testcontainers.utility.DockerImageName
 
 trait PostgresContainerSupport {
 
-  def makePostgresTransactor(config: Config): Resource[IO, Transactor[IO]] =
+  def makePostgresTransactor: Resource[IO, Transactor[IO]] =
     for {
-      _ <- makePostgresContainer
-      _ <- Resource.eval(FlywayMigration.migrate[IO](config.postgresql))
-      tx <- makeTransactor[IO](config.postgresql)
+      container <- makePostgresContainer
+      config = PostgresqlConfig(
+        container.jdbcUrl,
+        container.username,
+        container.password,
+        poolSize = 2
+      )
+      _ <- Resource.eval(FlywayMigration.migrate[IO](config))
+      tx <- makeTransactor[IO](config)
     } yield tx
 
   private def makePostgresContainer: Resource[IO, PostgreSQLContainer] =

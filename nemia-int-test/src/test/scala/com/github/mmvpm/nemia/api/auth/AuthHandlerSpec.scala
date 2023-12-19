@@ -43,7 +43,7 @@ class AuthHandlerSpec
   override val resource: Resource[IO, Transactor[IO]] =
     for {
       _ <- makeRedisContainer
-      tr <- makePostgresTransactor(config)
+      tr <- makePostgresTransactor
     } yield tr
 
   private def createBackend(implicit tr: Transactor[IO]): IO[SttpBackend[IO, Any]] =
