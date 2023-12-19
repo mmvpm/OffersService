@@ -22,6 +22,8 @@ jobs:
           java-version: '11'
           distribution: 'temurin'
           cache: 'sbt'
+      - name: Build
+        run: sbt scalafmtSbtCheck scalafmtCheckAll compile
       - name: Run nemia tests
         run: sbt nemia/test
       - name: Run parseidon tests
