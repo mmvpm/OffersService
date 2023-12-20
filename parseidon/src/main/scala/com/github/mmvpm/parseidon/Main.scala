@@ -2,8 +2,9 @@ package com.github.mmvpm.parseidon
 
 import cats.effect.{ExitCode, IO, IOApp}
 import cats.effect.std.Random
-import com.github.mmvpm.parseidon.client.nemia.{NemiaClient, NemiaClientSttp}
-import com.github.mmvpm.parseidon.client.youla.{YoulaClient, YoulaClientSttp}
+import com.github.mmvpm.parseidon.client.nemia.{NemiaClient, NemiaClientRetrying, NemiaClientSttp}
+import com.github.mmvpm.parseidon.client.util.{RetryUtils, RetryUtilsImpl}
+import com.github.mmvpm.parseidon.client.youla.{YoulaClient, YoulaClientRetrying, YoulaClientSttp}
 import com.github.mmvpm.parseidon.consumer.{PageConsumer, PageConsumerImpl}
 import com.github.mmvpm.parseidon.dao.queue._
 import com.github.mmvpm.parseidon.dao.util.RedisClientFactory
@@ -38,8 +39,11 @@ object Main extends IOApp with Logging {
       pageQueueReader: PageQueueReader[IO] = new PageQueueReaderRedis[IO](redisFactory)
       pageQueueWriter: PageQueueWriter[IO] = new PageQueueWriterRedis[IO](redisFactory)
 
+      retryUtils: RetryUtils[IO] = new RetryUtilsImpl[IO](config.retry)
       youlaClient: YoulaClient[IO] = new YoulaClientSttp[IO](config.youla, sttpBackend)
-      offersServiceClient: NemiaClient[IO] = new NemiaClientSttp[IO](config.nemia, sttpBackend)
+      nemiaClient: NemiaClient[IO] = new NemiaClientSttp[IO](config.nemia, sttpBackend)
+      nemiaClientRetying: NemiaClient[IO] = new NemiaClientRetrying(nemiaClient, retryUtils)
+      youlaClientRetying: YoulaClient[IO] = new YoulaClientRetrying(youlaClient, retryUtils)
 
       pageParser: PageParser[IO] = new PageParserJsoup[IO](browser)
       catalogConverter: CatalogConverter = new CatalogConverterImpl(config.youla)
@@ -53,13 +57,13 @@ object Main extends IOApp with Logging {
           pageVisitedDao,
           pageQueueReader,
           pageParser,
-          offersServiceClient
+          nemiaClientRetying
         )
       pageProducer: PageProducer[IO] =
         new PageProducerImpl[IO](
           config.youla,
           pageQueueWriter,
-          youlaClient,
+          youlaClientRetying,
           queryGenerator,
           catalogConverter
         )

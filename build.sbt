@@ -19,6 +19,7 @@ val quillVersion = "4.6.0"
 val redisVersion = "3.42"
 val scrapperVersion = "3.0.0"
 val sttpClientVersion = "3.9.0"
+val catsRetryVersion = "3.1.0"
 val catsBackendVersion = "3.8.13"
 
 val testVersion = "1.4.0"
@@ -79,6 +80,10 @@ val sttpClient = Seq(
   "com.softwaremill.sttp.client3" %% "core" % sttpClientVersion,
   "com.softwaremill.sttp.client3" %% "circe" % sttpClientVersion,
   "com.softwaremill.sttp.client3" %% "async-http-client-backend-cats" % catsBackendVersion
+)
+
+val catsRetry = Seq(
+  "com.github.cb372" %% "cats-retry" % catsRetryVersion
 )
 
 val scrapper = Seq(
@@ -143,6 +148,7 @@ lazy val parseidon = (project in file("parseidon"))
       pureconfig,
       redis,
       sttpClient,
+      catsRetry,
       scrapper,
       // test
       scalatest,
