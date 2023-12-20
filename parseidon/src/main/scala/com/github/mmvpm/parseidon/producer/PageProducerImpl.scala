@@ -28,7 +28,7 @@ class PageProducerImpl[F[_]: Monad: Sync](
     for {
       query <- EitherT.liftF(queryGenerator.randomQuery)
       _ = log.info(s"request youla for: '$query'")
-      catalog <- youlaClient.search(query) // TODO: retry
+      catalog <- youlaClient.search(query)
       pages = catalogConverter.convert(catalog)
       _ = log.info(s"youla catalog size: ${pages.size}")
       _ <- pages.map(pageQueueWriter.append).sequence

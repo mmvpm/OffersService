@@ -51,7 +51,7 @@ class PageConsumerImpl[F[_]: Monad: Sync](
   private def handleItem(item: YoulaItem): EitherT[F, NemiaError, Unit] = {
     val offer = item.offer.toOffer
     val user = item.user.toUser(getPassword(item.user))
-    for { // TODO: retry
+    for {
       _ <- nemiaClient.signUp(user).as(()).recover {
         case NemiaApiError("user.already.exists", StatusCode.BadRequest.code, _) =>
           // do nothing if the user already exists because the password is known
