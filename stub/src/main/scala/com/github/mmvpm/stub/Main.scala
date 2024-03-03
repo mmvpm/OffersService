@@ -30,11 +30,13 @@ object Main extends IOApp {
     for {
       _ <- IO.pure(0)
 
+      pingHandler: PingHandler[IO] = new PingHandler[IO]
+
       stubDao: StubDao[IO] = new StubDaoPostgresql[IO]
       stubService: StubService[IO] = new StubServiceImpl[IO](stubDao)
       stubHandler: StubHandler[IO] = new StubHandler[IO](stubService)
 
-      handlers = List(stubHandler)
+      handlers = List(pingHandler, stubHandler)
       endpoints <- IO.delay(handlers.flatMap(_.endpoints))
       routes = Http4sServerInterpreter[IO].toRoutes(swaggerBy(endpoints) ++ endpoints)
       server <- serverBuilder(config, routes).value.rethrow

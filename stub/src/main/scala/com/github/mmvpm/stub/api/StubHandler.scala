@@ -48,5 +48,5 @@ class StubHandler[F[_]](stubService: StubService[F]) extends Handler[F] {
       .serverLogic((stubService.updateStub _).tupled(_).value)
 
   override def endpoints: List[ServerEndpoint[Any, F]] =
-    List(getStub, getStubs, createStub, updateStub)
+    List(getStub, getStubs, createStub, updateStub).map(_.withTag("stub"))
 }
