@@ -123,6 +123,7 @@ lazy val stub = (project in file("stub"))
     name := "stub",
     libraryDependencies ++= Seq(
       cats,
+      logback,
       pureconfig,
       tapir,
       http4s,
