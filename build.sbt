@@ -69,7 +69,6 @@ val apacheCommons = Seq(
 )
 
 val databases = Seq(
-//  "io.getquill" %% "quill-doobie" % quillVersion,
   "org.tpolecat" %% "doobie-core" % doobieVersion,
   "org.tpolecat" %% "doobie-postgres" % doobieVersion,
   "org.tpolecat" %% "doobie-hikari" % doobieVersion,
