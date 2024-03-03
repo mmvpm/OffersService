@@ -52,12 +52,12 @@ object Main extends IOApp {
       host <- parseHost(config.server.host)
       port <- parsePort(config.server.port)
       builder <- IO.delay {
-        EmberServerBuilder.default[IO]
+        EmberServerBuilder
+          .default[IO]
           .withHost(host)
           .withPort(port)
           .withHttpApp(
-            Router("/" -> routes)
-              .orNotFound
+            Router("/" -> routes).orNotFound
           )
       }.attemptT
     } yield builder
