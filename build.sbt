@@ -4,6 +4,8 @@ ThisBuild / version := "0.1.0-SNAPSHOT"
 
 ThisBuild / scalaVersion := "2.13.12"
 
+// versions
+
 val catsVersion = "2.9.0"
 val catsEffect3 = "3.4.8"
 val circeVersion = "0.14.6"
@@ -21,6 +23,7 @@ val scrapperVersion = "3.0.0"
 val sttpClientVersion = "3.9.0"
 val catsRetryVersion = "3.1.0"
 val catsBackendVersion = "3.8.13"
+val bot4sVersion = "5.7.1"
 
 val testVersion = "1.4.0"
 val scalatestVersion = "3.2.17"
@@ -30,6 +33,8 @@ val catsTestingVersion = "1.4.0"
 val testcontainersVersion = "0.40.15"
 val testcontainersRedis = "1.3.2"
 val testcontainersPostgresqlVersion = "0.40.12"
+
+// main dependencies
 
 val cats = Seq(
   "org.typelevel" %% "cats-core" % catsVersion,
@@ -89,6 +94,12 @@ val scrapper = Seq(
   "net.ruippeixotog" %% "scala-scraper" % scrapperVersion
 )
 
+val bot4s = Seq(
+  "com.bot4s" %% "telegram-core" % bot4sVersion
+)
+
+// test dependencies
+
 val testcontainers = Seq(
   "com.redislabs.testcontainers" % "testcontainers-redis" % testcontainersRedis,
   "com.dimafeng" %% "testcontainers-scala-scalatest" % testcontainersVersion,
@@ -111,6 +122,8 @@ val tapirStubServer = Seq(
   "com.softwaremill.sttp.tapir" %% "tapir-sttp-stub-server" % tapirVersion % Test
 )
 
+// projects
+
 lazy val common = (project in file("common"))
   .settings(
     name := "common"
@@ -130,8 +143,19 @@ lazy val stub = (project in file("stub"))
     ).flatten
   )
 
+lazy val bot = (project in file("bot"))
+  .dependsOn(common)
+  .settings(
+    name := "bot",
+    libraryDependencies ++= Seq(
+      cats,
+      bot4s,
+      sttpClient
+    ).flatten
+  )
+
 lazy val root = (project in file("."))
   .settings(
     name := "OffersService"
   )
-  .aggregate(common, stub)
+  .aggregate(common, stub, bot)
