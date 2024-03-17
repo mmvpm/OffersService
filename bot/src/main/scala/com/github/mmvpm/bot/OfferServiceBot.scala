@@ -19,21 +19,21 @@ class OfferServiceBot[F[_]: Concurrent](
     renderer: Renderer,
     manager: StateManager[F],
     stateStorage: Storage[State],
-    lastMessageStorage: Storage[Option[MessageID]])
-  extends TelegramBot[F](token, sttpBackend)
-  with Polling[F]
-  with Commands[F]
-  with Callbacks[F] {
+    lastMessageStorage: Storage[Option[MessageID]]
+) extends TelegramBot[F](token, sttpBackend)
+    with Polling[F]
+    with Commands[F]
+    with Callbacks[F] {
 
   // user sent a message (text, image, etc) to the chat
   onMessage { implicit message =>
     command(message) match {
-      case Some(Command("roll", _)) => roll
+      case Some(Command("roll", _))  => roll
       case Some(Command("start", _)) => start
       case None =>
         getNextStateTag(stateStorage.get) match {
           case UnknownTag => fail
-          case nextTag => replyResolved(nextTag)
+          case nextTag    => replyResolved(nextTag)
         }
     }
   }
@@ -67,7 +67,7 @@ class OfferServiceBot[F[_]: Concurrent](
   private def withoutError(state: State): State =
     state match {
       case Error(returnTo, _) => returnTo
-      case _ => state
+      case _                  => state
     }
 
   private def requestLogged(req: Either[EditMessageText, SendMessage]): F[Unit] =

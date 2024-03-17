@@ -14,26 +14,26 @@ class StateManagerImpl[F[_]: Monad] extends StateManager[F] {
 
   override def getNextState(tag: String, current: State)(implicit message: Message): F[State] =
     tag match {
-      case SearchTag => toSearch(current)
-      case ListingTag => toListing(current)
-      case OneOfferTag => toOneOffer(current)
-      case CreateOfferNameTag => toCreateOfferName(current)
-      case CreateOfferPriceTag => toCreateOfferPrice(current)
+      case SearchTag                 => toSearch(current)
+      case ListingTag                => toListing(current)
+      case OneOfferTag               => toOneOffer(current)
+      case CreateOfferNameTag        => toCreateOfferName(current)
+      case CreateOfferPriceTag       => toCreateOfferPrice(current)
       case CreateOfferDescriptionTag => toCreateOfferDescription(current)
-      case CreateOfferPhotoTag => toCreateOfferPhoto(current)
-      case CreatedOfferTag => toCreatedOffer(current)
-      case MyOffersTag => toMyOffers(current)
-      case MyOfferTag => toMyOffer(current)
-      case EditOfferTag => toEditOffer(current)
-      case EditOfferNameTag => toEditOfferName(current)
-      case EditOfferPriceTag => toEditOfferPrice(current)
-      case EditOfferDescriptionTag => toEditOfferDescription(current)
-      case AddOfferPhotoTag => toAddOfferPhoto(current)
-      case DeleteOfferPhotosTag => toDeleteOfferPhotos(current)
-      case UpdatedOfferTag => toUpdatedOffer(current)
-      case DeletedOfferTag => toDeleteOffer(current)
-      case BackTag => toBack(current)
-      case StartedTag => toStarted(current)
+      case CreateOfferPhotoTag       => toCreateOfferPhoto(current)
+      case CreatedOfferTag           => toCreatedOffer(current)
+      case MyOffersTag               => toMyOffers(current)
+      case MyOfferTag                => toMyOffer(current)
+      case EditOfferTag              => toEditOffer(current)
+      case EditOfferNameTag          => toEditOfferName(current)
+      case EditOfferPriceTag         => toEditOfferPrice(current)
+      case EditOfferDescriptionTag   => toEditOfferDescription(current)
+      case AddOfferPhotoTag          => toAddOfferPhoto(current)
+      case DeleteOfferPhotosTag      => toDeleteOfferPhotos(current)
+      case UpdatedOfferTag           => toUpdatedOffer(current)
+      case DeletedOfferTag           => toDeleteOffer(current)
+      case BackTag                   => toBack(current)
+      case StartedTag                => toStarted(current)
     }
 
   // transitions
@@ -54,7 +54,7 @@ class StateManagerImpl[F[_]: Monad] extends StateManager[F] {
       offerId <- message.text
       offers <- current match {
         case Listing(_, offers, _) => Some(offers)
-        case _ => None
+        case _                     => None
       }
       offer <- offers.find(_.id.toString == offerId)
     } yield OneOffer(current, offer)
@@ -68,7 +68,7 @@ class StateManagerImpl[F[_]: Monad] extends StateManager[F] {
   private def toCreateOfferPrice(current: State)(implicit message: Message): F[State] =
     message.text match {
       case Some(name) => CreateOfferPrice(current, Draft(name = Some(name))).pure
-      case _ => Error(current, "Пожалуйста, введите название объявления").pure
+      case _          => Error(current, "Пожалуйста, введите название объявления").pure
     }
 
   private def toCreateOfferDescription(current: State)(implicit message: Message): F[State] = {
@@ -77,7 +77,7 @@ class StateManagerImpl[F[_]: Monad] extends StateManager[F] {
       price <- priceRaw.toLongOption
       draft <- current match {
         case CreateOfferPrice(_, draft) => Some(draft)
-        case _ => None
+        case _                          => None
       }
       updatedDraft = draft.copy(price = Some(price))
     } yield CreateOfferDescription(current, updatedDraft)
@@ -111,7 +111,7 @@ class StateManagerImpl[F[_]: Monad] extends StateManager[F] {
   private def toCreatedOffer(current: State)(implicit message: Message): F[State] =
     current match {
       case CreateOfferPhoto(_, draft) => CreatedOffer(current, draft).pure
-      case _ => Error(current, "Произошла ошибка! Попробуйте ещё раз").pure
+      case _                          => Error(current, "Произошла ошибка! Попробуйте ещё раз").pure
     }
 
   private def toMyOffers(current: State)(implicit message: Message): F[State] =
@@ -127,14 +127,14 @@ class StateManagerImpl[F[_]: Monad] extends StateManager[F] {
       offerId <- message.text
       offers <- current match {
         case MyOffers(_, offers) => Some(offers)
-        case _ => None
+        case _                   => None
       }
       offer <- offers.find(_.id == UUID.fromString(offerId))
     } yield offer
 
     optOffer match {
       case Some(offer) => MyOffer(current, offer).pure
-      case None => Error(current, "К сожалению, такого id не существует! Попробуйте ещё раз").pure
+      case None        => Error(current, "К сожалению, такого id не существует! Попробуйте ещё раз").pure
     }
   }
 
@@ -201,7 +201,7 @@ class StateManagerImpl[F[_]: Monad] extends StateManager[F] {
         // returns the nearest EditOffer
         previous match {
           case EditOffer(_) => previous.pure
-          case _ => previous.optPrevious.getOrElse(Started).pure
+          case _            => previous.optPrevious.getOrElse(Started).pure
         }
       case _ =>
         current.optPrevious.getOrElse(Started).pure

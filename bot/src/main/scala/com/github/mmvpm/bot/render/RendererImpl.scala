@@ -11,7 +11,7 @@ class RendererImpl extends Renderer {
   override def render(
       state: State,
       editMessage: Option[MessageID] = None
-    )(implicit message: Message): Either[EditMessageText, SendMessage] = {
+  )(implicit message: Message): Either[EditMessageText, SendMessage] = {
     val buttons = state.next.map { tag =>
       InlineKeyboardButton.callbackData(buttonBy(tag), tag)
     }
@@ -26,4 +26,3 @@ class RendererImpl extends Renderer {
       Right(send)
   }
 }
-

@@ -39,37 +39,37 @@ object State {
 
   def buttonBy(tag: Tag): Button =
     tag match {
-      case SearchTag => "Найти товар"
-      case ListingTag => "На следующую страницу"
-      case CreateOfferNameTag => "Разместить объявление"
-      case CreatedOfferTag => "Опубликовать объявление"
-      case MyOffersTag => "Посмотреть мои объявления"
-      case EditOfferTag => "Изменить это объявление"
-      case EditOfferNameTag => "Название"
-      case EditOfferPriceTag => "Цену"
+      case SearchTag               => "Найти товар"
+      case ListingTag              => "На следующую страницу"
+      case CreateOfferNameTag      => "Разместить объявление"
+      case CreatedOfferTag         => "Опубликовать объявление"
+      case MyOffersTag             => "Посмотреть мои объявления"
+      case EditOfferTag            => "Изменить это объявление"
+      case EditOfferNameTag        => "Название"
+      case EditOfferPriceTag       => "Цену"
       case EditOfferDescriptionTag => "Описание"
-      case AddOfferPhotoTag => "Добавить фото"
-      case DeleteOfferPhotosTag => "Удалить все фото"
-      case DeletedOfferTag => "Удалить это объявление"
-      case BackTag => "Назад"
-      case StartedTag => "Вернуться в начало"
-      case UnknownTag => sys.error(s"buttonBy($tag)")
+      case AddOfferPhotoTag        => "Добавить фото"
+      case DeleteOfferPhotosTag    => "Удалить все фото"
+      case DeletedOfferTag         => "Удалить это объявление"
+      case BackTag                 => "Назад"
+      case StartedTag              => "Вернуться в начало"
+      case UnknownTag              => sys.error(s"buttonBy($tag)")
     }
 
   def getNextStateTag(current: State): Tag =
     current match {
-      case Search(_) => ListingTag
-      case Listing(_, _, _) => OneOfferTag
-      case MyOffers(_, _) => MyOfferTag
-      case CreateOfferName(_) => CreateOfferPriceTag
-      case CreateOfferPrice(_, _) => CreateOfferDescriptionTag
+      case Search(_)                    => ListingTag
+      case Listing(_, _, _)             => OneOfferTag
+      case MyOffers(_, _)               => MyOfferTag
+      case CreateOfferName(_)           => CreateOfferPriceTag
+      case CreateOfferPrice(_, _)       => CreateOfferDescriptionTag
       case CreateOfferDescription(_, _) => CreateOfferPhotoTag
-      case CreateOfferPhoto(_, _) => CreateOfferPhotoTag // upload another photo
-      case EditOfferName(_) => UpdatedOfferTag
-      case EditOfferPrice(_) => UpdatedOfferTag
-      case EditOfferDescription(_) => UpdatedOfferTag
-      case AddOfferPhoto(_) => UpdatedOfferTag
-      case _ => UnknownTag
+      case CreateOfferPhoto(_, _)       => CreateOfferPhotoTag // upload another photo
+      case EditOfferName(_)             => UpdatedOfferTag
+      case EditOfferPrice(_)            => UpdatedOfferTag
+      case EditOfferDescription(_)      => UpdatedOfferTag
+      case AddOfferPhoto(_)             => UpdatedOfferTag
+      case _                            => UnknownTag
     }
 
   // previous state

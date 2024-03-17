@@ -10,6 +10,5 @@ trait Renderer {
   def render(
       state: State,
       editMessage: Option[MessageID]
-    )(implicit message: Message
-    ): Either[EditMessageText, SendMessage]
+  )(implicit message: Message): Either[EditMessageText, SendMessage]
 }
