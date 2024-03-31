@@ -129,7 +129,7 @@ lazy val common = (project in file("common"))
     libraryDependencies ++= Seq(cats, logback, apacheCommons).flatten
   )
 
-lazy val stub = (project in file("service"))
+lazy val service = (project in file("service"))
   .dependsOn(common)
   .settings(
     name := "service",
@@ -148,7 +148,8 @@ lazy val bot = (project in file("bot"))
     name := "bot",
     libraryDependencies ++= Seq(
       bot4s,
-      sttpClient
+      sttpClient,
+      pureconfig
     ).flatten
   )
 
@@ -156,4 +157,4 @@ lazy val root = (project in file("."))
   .settings(
     name := "OffersService"
   )
-  .aggregate(common, stub, bot)
+  .aggregate(common, service, bot)

@@ -14,6 +14,9 @@ object State {
 
   // tags
 
+  val RegisteredTag = "registered"
+  val LoggedInTag = "legged-in"
+  val EnterPasswordTag = "enter-password"
   val SearchTag: Tag = "search"
   val ListingTag: Tag = "listing"
   val OneOfferTag: Tag = "one-offer"
@@ -69,6 +72,7 @@ object State {
       case EditOfferPrice(_)            => UpdatedOfferTag
       case EditOfferDescription(_)      => UpdatedOfferTag
       case AddOfferPhoto(_)             => UpdatedOfferTag
+      case EnterPassword                => LoggedInTag
       case _                            => UnknownTag
     }
 
@@ -82,12 +86,37 @@ object State {
     val optPrevious: Option[State] = Some(self.previous)
   }
 
+  // sign-in & sign-up
+
+  case class Registered(password: String) extends State with NoPrevious {
+    override def tag: Tag = RegisteredTag
+    override def next: Seq[Tag] = Seq(StartedTag)
+    override def text: String =
+      s"""
+        |Вы успешно зарегистрированы на платформе!
+        |
+        |Ваш пароль: `$password`
+        |""".stripMargin
+  }
+
+  case class LoggedIn(name: String) extends State with NoPrevious {
+    override def tag: Tag = LoggedInTag
+    override def next: Seq[Tag] = Seq(StartedTag)
+    override def text: String = s"Добро пожаловать, $name!"
+  }
+
+  case object EnterPassword extends State with NoPrevious {
+    override def tag: Tag = EnterPasswordTag
+    override def next: Seq[Tag] = Seq.empty
+    override def text: String = "Пожалуйста, введите пароль, чтобы войти в свой профиль:"
+  }
+
   // beginning
 
   case object Started extends State with NoPrevious {
     val tag: Tag = StartedTag
     val next: Seq[Tag] = Seq(SearchTag, CreateOfferNameTag, MyOffersTag)
-    val text: String = "Как я могу вам помочь?"
+    val text: String = "Чем я могу вам помочь?"
   }
 
   // search
