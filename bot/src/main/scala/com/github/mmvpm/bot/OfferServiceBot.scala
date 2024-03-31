@@ -7,6 +7,9 @@ import com.bot4s.telegram.api.declarative.{Callbacks, Command, Commands}
 import com.bot4s.telegram.cats.{Polling, TelegramBot}
 import com.bot4s.telegram.methods.{EditMessageText, SendDice, SendMessage}
 import com.bot4s.telegram.models._
+import com.github.mmvpm.bot.manager.ofs.OfsManager
+import com.github.mmvpm.bot.manager.ofs.error.OfsError.InvalidSession
+import com.github.mmvpm.bot.manager.ofs.response.LoginOrRegisterResponse
 import com.github.mmvpm.bot.model.MessageID
 import com.github.mmvpm.bot.render.Renderer
 import com.github.mmvpm.bot.state.{State, StateManager, Storage}
@@ -17,9 +20,10 @@ class OfferServiceBot[F[_]: Concurrent](
     token: String,
     sttpBackend: SttpBackend[F, Any],
     renderer: Renderer,
-    manager: StateManager[F],
+    stateManager: StateManager[F],
     stateStorage: Storage[State],
-    lastMessageStorage: Storage[Option[MessageID]]
+    lastMessageStorage: Storage[Option[MessageID]],
+    ofsManager: OfsManager[F]
 ) extends TelegramBot[F](token, sttpBackend)
     with Polling[F]
     with Commands[F]
@@ -50,11 +54,25 @@ class OfferServiceBot[F[_]: Concurrent](
     request(SendDice(message.chat.id)).void
 
   private def start(implicit message: Message): F[Unit] =
-    requestLogged(renderer.render(stateStorage.get, lastMessageStorage.get)).void
+    ofsManager.loginOrRegister.value.flatMap {
+      case Left(InvalidSession) =>
+        val state: State = EnterPassword
+        stateStorage.set(state)
+        requestLogged(renderer.render(state, None))
+      case Left(error) =>
+        reply(s"Ошибка: ${error.details}. Попробуйте команду /start ещё раз").void
+      case Right(response) =>
+        val state = response match {
+          case LoginOrRegisterResponse.LoggedIn(name)       => LoggedIn(name)
+          case LoginOrRegisterResponse.Registered(password) => Registered(password)
+        }
+        val saveMessageId = !state.isInstanceOf[Registered] // to save password in the chat
+        requestLogged(renderer.render(state, None), saveMessageId)
+    }
 
   private def replyResolved(tag: String)(implicit message: Message): F[Unit] =
     for {
-      nextState <- manager.getNextState(tag, stateStorage.get)
+      nextState <- stateManager.getNextState(tag, stateStorage.get)
       _ = stateStorage.set(withoutError(nextState))
       reply = renderer.render(nextState, lastMessageStorage.get)
       _ <- requestLogged(reply)
@@ -71,7 +89,7 @@ class OfferServiceBot[F[_]: Concurrent](
       case _                  => state
     }
 
-  private def requestLogged(req: Either[EditMessageText, SendMessage]): F[Unit] =
+  private def requestLogged(req: Either[EditMessageText, SendMessage], saveMessageId: Boolean = true): F[Unit] =
     req match {
       case Left(toEdit) =>
         for {
@@ -81,7 +99,7 @@ class OfferServiceBot[F[_]: Concurrent](
       case Right(toSend) =>
         for {
           sent <- request(toSend)
-          _ = lastMessageStorage.set(Some(sent.messageId))(sent)
+          _ = if (saveMessageId) lastMessageStorage.set(Some(sent.messageId))(sent)
           _ = println(s"Sent $sent")
         } yield ()
     }

@@ -1,26 +1,41 @@
 package com.github.mmvpm.bot
 
+import cats.effect.std.Random
 import cats.effect.{IO, IOApp}
+import com.github.mmvpm.bot.client.ofs.{OfsClient, OfsClientSttp}
+import com.github.mmvpm.bot.manager.ofs.{OfsManager, OfsManagerImpl}
 import com.github.mmvpm.bot.model.MessageID
-import com.github.mmvpm.bot.render.RendererImpl
-import com.github.mmvpm.bot.state.{State, StateManagerImpl, StorageImpl}
+import com.github.mmvpm.bot.render.{Renderer, RendererImpl}
+import com.github.mmvpm.bot.state.{State, StateManager, StateManagerImpl, StorageImpl}
 import com.github.mmvpm.bot.util.ResourceUtils
+import com.github.mmvpm.model.Session
 import org.asynchttpclient.Dsl.asyncHttpClient
+import pureconfig.ConfigSource
+import pureconfig.generic.auto._
 import sttp.client3.asynchttpclient.cats.AsyncHttpClientCatsBackend
 
 object Main extends IOApp.Simple {
 
   override def run: IO[Unit] =
     for {
-      _ <- IO.println("Starting telegram bot...")
+      random <- Random.scalaUtilRandom[IO]
 
       token = ResourceUtils.readTelegramToken()
+      config = ConfigSource.default.loadOrThrow[Config]
+
       sttpBackend = AsyncHttpClientCatsBackend.usingClient[IO](asyncHttpClient)
-      renderer = new RendererImpl
-      manager = new StateManagerImpl[IO]
+
       stateStorage = new StorageImpl[State](State.Started)
+      sessionStorage = new StorageImpl[Option[Session]](None)
       lastMessageStorage = new StorageImpl[Option[MessageID]](None)
-      bot = new OfferServiceBot[IO](token, sttpBackend, renderer, manager, stateStorage, lastMessageStorage)
+
+      ofsClient: OfsClient[IO] = new OfsClientSttp[IO](config.ofs, sttpBackend)
+      ofsManager: OfsManager[IO] = new OfsManagerImpl[IO](ofsClient, sessionStorage, random)
+
+      renderer: Renderer = new RendererImpl
+      manager: StateManager[IO] = new StateManagerImpl[IO](ofsManager)
+
+      bot = new OfferServiceBot[IO](token, sttpBackend, renderer, manager, stateStorage, lastMessageStorage, ofsManager)
 
       _ <- bot.startPolling()
     } yield ()

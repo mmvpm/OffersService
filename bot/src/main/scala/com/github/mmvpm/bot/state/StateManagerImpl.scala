@@ -1,7 +1,10 @@
 package com.github.mmvpm.bot.state
 
 import cats.Monad
+import cats.implicits.toFlatMapOps
 import com.bot4s.telegram.models.Message
+import com.github.mmvpm.bot.manager.ofs.OfsManager
+import com.github.mmvpm.bot.manager.ofs.error.OfsError.InvalidSession
 import com.github.mmvpm.bot.model.Draft
 import com.github.mmvpm.bot.state.State.{Listing, _}
 import com.github.mmvpm.bot.util.StateUtils.StateSyntax
@@ -10,7 +13,7 @@ import com.github.mmvpm.model.{Offer, OfferDescription, OfferStatus}
 import java.util.UUID
 import scala.util.Random
 
-class StateManagerImpl[F[_]: Monad] extends StateManager[F] {
+class StateManagerImpl[F[_]: Monad](ofsManager: OfsManager[F]) extends StateManager[F] {
 
   override def getNextState(tag: String, current: State)(implicit message: Message): F[State] =
     tag match {
@@ -32,6 +35,7 @@ class StateManagerImpl[F[_]: Monad] extends StateManager[F] {
       case DeleteOfferPhotosTag      => toDeleteOfferPhotos(current)
       case UpdatedOfferTag           => toUpdatedOffer(current)
       case DeletedOfferTag           => toDeleteOffer(current)
+      case LoggedInTag               => toLoggedIn(current)
       case BackTag                   => toBack(current)
       case StartedTag                => toStarted(current)
     }
@@ -110,8 +114,14 @@ class StateManagerImpl[F[_]: Monad] extends StateManager[F] {
 
   private def toCreatedOffer(current: State)(implicit message: Message): F[State] =
     current match {
-      case CreateOfferPhoto(_, draft) => CreatedOffer(current, draft).pure
-      case _                          => Error(current, "Произошла ошибка! Попробуйте ещё раз").pure
+      case CreateOfferPhoto(_, draft) if draft.toOfferDescription.nonEmpty =>
+        ofsManager.createOffer(draft.toOfferDescription.get).value.flatMap {
+          case Right(_)             => CreatedOffer(current, draft).pure
+          case Left(InvalidSession) => EnterPassword.pure
+          case Left(error)          => Error(current, s"Произошла ошибка: ${error.details}. Попробуйте ещё раз").pure
+        }
+      case _ =>
+        Error(current, "Произошла ошибка! Попробуйте ещё раз").pure
     }
 
   private def toMyOffers(current: State)(implicit message: Message): F[State] =
@@ -192,6 +202,17 @@ class StateManagerImpl[F[_]: Monad] extends StateManager[F] {
 
   private def toDeleteOffer(current: State)(implicit message: Message): F[State] =
     DeletedOffer(current).pure
+
+  private def toLoggedIn(current: State)(implicit message: Message): F[State] =
+    message.text match {
+      case Some(_) =>
+        ofsManager.login.value.flatMap {
+          case Left(error)     => Error(current, s"Ошибка: ${error.details}").pure
+          case Right(loggedIn) => LoggedIn(loggedIn.name).pure
+        }
+      case None =>
+        Error(current, s"Пожалуйста, введите пароль").pure
+    }
 
   private def toBack(current: State)(implicit message: Message): F[State] =
     current match {
