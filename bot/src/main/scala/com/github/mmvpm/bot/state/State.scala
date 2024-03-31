@@ -1,7 +1,7 @@
 package com.github.mmvpm.bot.state
 
 import com.github.mmvpm.bot.model.{Button, Draft, Tag}
-import com.github.mmvpm.model.Stub
+import com.github.mmvpm.model.Offer
 
 sealed trait State {
   def tag: Tag
@@ -98,7 +98,7 @@ object State {
     val text: String = "Что хотите найти?"
   }
 
-  case class Listing(previous: State, offers: Seq[Stub], from: Int) extends State with WithPrevious {
+  case class Listing(previous: State, offers: Seq[Offer], from: Int) extends State with WithPrevious {
 
     val tag: Tag = ListingTag
 
@@ -124,11 +124,11 @@ object State {
 
     val StepSize = 5
 
-    def start(previous: State, offers: Seq[Stub]): Listing =
-      Listing(previous: State, offers: Seq[Stub], from = 0)
+    def start(previous: State, offers: Seq[Offer]): Listing =
+      Listing(previous: State, offers: Seq[Offer], from = 0)
   }
 
-  case class OneOffer(previous: State, offer: Stub) extends State with WithPrevious {
+  case class OneOffer(previous: State, offer: Offer) extends State with WithPrevious {
     val tag: Tag = OneOfferTag
     val next: Seq[Tag] = Seq(BackTag)
     val text: String =
@@ -136,7 +136,7 @@ object State {
         |Выбранное объявление:
         |
         |- id: ${offer.id}
-        |- data: ${offer.data}
+        |- data: ${offer.description}
         |""".stripMargin
   }
 
@@ -174,7 +174,7 @@ object State {
 
   // my offers
 
-  case class MyOffers(previous: State, offers: Seq[Stub]) extends State with WithPrevious {
+  case class MyOffers(previous: State, offers: Seq[Offer]) extends State with WithPrevious {
     val tag: Tag = MyOffersTag
     val next: Seq[Tag] = Seq(BackTag)
     val text: String =
@@ -187,7 +187,7 @@ object State {
          |""".stripMargin
   }
 
-  case class MyOffer(previous: State, offer: Stub) extends State with WithPrevious {
+  case class MyOffer(previous: State, offer: Offer) extends State with WithPrevious {
     val tag: Tag = MyOfferTag
     val next: Seq[Tag] = Seq(EditOfferTag, DeletedOfferTag, BackTag)
     val text: String =
@@ -195,7 +195,7 @@ object State {
          |Ваше объявление:
          |
          |- id: ${offer.id}
-         |- data: ${offer.data}
+         |- data: ${offer.description}
          |""".stripMargin
   }
 
