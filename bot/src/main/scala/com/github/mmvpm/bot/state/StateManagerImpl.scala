@@ -5,7 +5,7 @@ import com.bot4s.telegram.models.Message
 import com.github.mmvpm.bot.model.Draft
 import com.github.mmvpm.bot.state.State.{Listing, _}
 import com.github.mmvpm.bot.util.StateUtils.StateSyntax
-import com.github.mmvpm.model.Stub
+import com.github.mmvpm.model.{Offer, OfferDescription, OfferStatus}
 
 import java.util.UUID
 import scala.util.Random
@@ -117,9 +117,9 @@ class StateManagerImpl[F[_]: Monad] extends StateManager[F] {
   private def toMyOffers(current: State)(implicit message: Message): F[State] =
     MyOffers(current, getOffers(5)).pure
 
-  private def getOffers(maxLength: Int): Seq[Stub] =
+  private def getOffers(maxLength: Int): Seq[Offer] =
     (0 until Random.nextInt(maxLength)).map { index =>
-      Stub(UUID.randomUUID(), s"${Random.nextString(Random.nextInt(30))} ($index)")
+      Offer(UUID.randomUUID, UUID.randomUUID, OfferDescription("name", 228, "description"), OfferStatus.Active)
     }
 
   private def toMyOffer(current: State)(implicit message: Message): F[State] = {

@@ -30,6 +30,7 @@ class OfferServiceBot[F[_]: Concurrent](
     command(message) match {
       case Some(Command("roll", _))  => roll
       case Some(Command("start", _)) => start
+      case Some(_)                   => fail
       case None =>
         getNextStateTag(stateStorage.get) match {
           case UnknownTag => fail

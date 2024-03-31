@@ -17,7 +17,6 @@ val apacheCommonsVersion = "1.16.0"
 val pureConfigVersion = "0.17.4"
 val flywayVersion = "9.16.0"
 val doobieVersion = "1.0.0-RC2"
-val quillVersion = "4.6.0"
 val redisVersion = "3.42"
 val scrapperVersion = "3.0.0"
 val sttpClientVersion = "3.9.0"
@@ -126,20 +125,20 @@ val tapirStubServer = Seq(
 
 lazy val common = (project in file("common"))
   .settings(
-    name := "common"
+    name := "common",
+    libraryDependencies ++= Seq(cats, logback, apacheCommons).flatten
   )
 
-lazy val stub = (project in file("stub"))
+lazy val stub = (project in file("service"))
   .dependsOn(common)
   .settings(
-    name := "stub",
+    name := "service",
     libraryDependencies ++= Seq(
-      cats,
-      logback,
       pureconfig,
       tapir,
       http4s,
-      databases
+      databases,
+      redis
     ).flatten
   )
 
@@ -148,7 +147,6 @@ lazy val bot = (project in file("bot"))
   .settings(
     name := "bot",
     libraryDependencies ++= Seq(
-      cats,
       bot4s,
       sttpClient
     ).flatten
