@@ -1,13 +1,13 @@
 package com.github.mmvpm.service.api
 
 import cats.Functor
+import com.github.mmvpm.model.UserID
 import com.github.mmvpm.service.api.response.{OkResponse, UserResponse}
 import com.github.mmvpm.service.api.support.{ApiErrorSupport, AuthSessionSupport}
 import com.github.mmvpm.service.api.util.CirceInstances._
 import com.github.mmvpm.service.api.util.SchemaInstances._
 import com.github.mmvpm.service.service.auth.AuthService
 import com.github.mmvpm.service.service.user.UserService
-import com.github.mmvpm.model.UserID
 import sttp.tapir._
 import sttp.tapir.json.circe._
 import sttp.tapir.server.ServerEndpoint

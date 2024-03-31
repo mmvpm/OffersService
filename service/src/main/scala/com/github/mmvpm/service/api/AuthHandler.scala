@@ -1,18 +1,16 @@
 package com.github.mmvpm.service.api
 
 import cats.Monad
+import com.github.mmvpm.model.Session
 import com.github.mmvpm.service.api.request.SignUpRequest
 import com.github.mmvpm.service.api.response.{SessionResponse, UserIdResponse, UserResponse}
+import com.github.mmvpm.service.api.support.{ApiErrorSupport, AuthBasicSupport}
 import com.github.mmvpm.service.api.util.CirceInstances._
 import com.github.mmvpm.service.api.util.SchemaInstances._
 import com.github.mmvpm.service.service.auth.AuthService
 import com.github.mmvpm.service.service.user.UserService
-import com.github.mmvpm.model.{Session, UserID}
-import com.github.mmvpm.service.api.support.{ApiErrorSupport, AuthBasicSupport}
-import sttp.model.headers.WWWAuthenticateChallenge
 import sttp.tapir._
 import sttp.tapir.json.circe._
-import sttp.tapir.model.UsernamePassword
 import sttp.tapir.server.ServerEndpoint
 
 class AuthHandler[F[_]: Monad](override val authService: AuthService[F], userService: UserService[F])

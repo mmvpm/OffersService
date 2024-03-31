@@ -1,12 +1,12 @@
 package com.github.mmvpm.service
 
 import cats.data.EitherT
-import cats.effect.{ExitCode, IO, IOApp}
 import cats.effect.std.Random
+import cats.effect.{ExitCode, IO, IOApp}
 import com.comcast.ip4s.{Host, Port}
 import com.github.mmvpm.service.api.{AuthHandler, OfferHandler, UserHandler}
 import com.github.mmvpm.service.dao.offer.{OfferDao, OfferDaoPostgresql}
-import com.github.mmvpm.service.dao.session.{SessionDao, SessionDaoInMemory, SessionDaoRedis}
+import com.github.mmvpm.service.dao.session.{SessionDao, SessionDaoRedis}
 import com.github.mmvpm.service.dao.user.{UserDao, UserDaoPostgresql}
 import com.github.mmvpm.service.dao.util.FlywayMigration
 import com.github.mmvpm.service.dao.util.Postgresql.makeTransactor
@@ -15,13 +15,13 @@ import com.github.mmvpm.service.service.offer.{OfferService, OfferServiceImpl}
 import com.github.mmvpm.service.service.user.{UserService, UserServiceImpl}
 import com.redis.RedisClient
 import doobie.Transactor
+import org.http4s.HttpRoutes
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.Router
-import org.http4s.HttpRoutes
 import pureconfig.ConfigSource
 import pureconfig.generic.auto._
-import sttp.tapir.server.http4s.Http4sServerInterpreter
 import sttp.tapir.server.ServerEndpoint
+import sttp.tapir.server.http4s.Http4sServerInterpreter
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
 
 object Main extends IOApp {

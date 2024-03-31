@@ -1,10 +1,9 @@
 package com.github.mmvpm.service.api
 
 import com.github.mmvpm.model.{OfferID, Session, UserID}
-import io.circe.Decoder.Result
 import sttp.model.StatusCode
-import sttp.tapir.{FieldName, Schema, SchemaType}
-import sttp.tapir.SchemaType.{SInteger, SProduct, SProductField, SString}
+import sttp.tapir.SchemaType.{SInteger, SProduct, SProductField}
+import sttp.tapir.{FieldName, Schema}
 
 package object error {
 

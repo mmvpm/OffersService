@@ -1,10 +1,10 @@
 package com.github.mmvpm.service.api.util
 
-import com.github.mmvpm.service.api.request._
-import com.github.mmvpm.service.api.response._
-import com.github.mmvpm.model._
 import com.github.mmvpm.model.OfferStatus.OfferStatus
 import com.github.mmvpm.model.UserStatus.UserStatus
+import com.github.mmvpm.model._
+import com.github.mmvpm.service.api.request._
+import com.github.mmvpm.service.api.response._
 import sttp.tapir.Schema
 
 object SchemaInstances {

@@ -4,9 +4,9 @@ import com.github.mmvpm.model.UserID
 import com.github.mmvpm.service.api.error.ApiError
 import com.github.mmvpm.service.service.auth.AuthService
 import sttp.model.headers.WWWAuthenticateChallenge
-import sttp.tapir.{PublicEndpoint, auth}
 import sttp.tapir.model.UsernamePassword
 import sttp.tapir.server.PartialServerEndpoint
+import sttp.tapir.{PublicEndpoint, auth}
 
 trait AuthBasicSupport[F[_]] {
 

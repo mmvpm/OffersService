@@ -1,20 +1,15 @@
 package com.github.mmvpm.service.service.auth
 
 import cats.data.EitherT
-import cats.{Functor, Monad}
 import cats.effect.std.UUIDGen
-import cats.effect.Clock
-import cats.implicits.{catsSyntaxApplicativeId, toBifunctorOps}
-import com.github.mmvpm.service.api.response.{SessionResponse, UserIdResponse}
-import com.github.mmvpm.service.dao.session.SessionDao
-import com.github.mmvpm.service.dao.user.UserDao
+import cats.{Functor, Monad}
 import com.github.mmvpm.model.{Session, UserID, UserStatus}
 import com.github.mmvpm.service.api.error._
+import com.github.mmvpm.service.api.response.{SessionResponse, UserIdResponse}
 import com.github.mmvpm.service.dao.error._
+import com.github.mmvpm.service.dao.session.SessionDao
+import com.github.mmvpm.service.dao.user.UserDao
 import com.github.mmvpm.service.service.auth.AuthServiceImpl.RichAuthResponse
-import sttp.model.headers.CookieValueWithMeta
-
-import java.time.Instant
 
 class AuthServiceImpl[F[_]: Monad: UUIDGen](
     userDao: UserDao[F],

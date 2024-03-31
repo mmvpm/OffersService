@@ -1,8 +1,8 @@
 package com.github.mmvpm.service.api.support
 
-import com.github.mmvpm.service.api.error._
 import com.github.mmvpm.service.api.error.CirceInstances._
 import com.github.mmvpm.service.api.error.SchemaInstances._
+import com.github.mmvpm.service.api.error._
 import sttp.model.StatusCode
 import sttp.tapir._
 import sttp.tapir.json.circe._

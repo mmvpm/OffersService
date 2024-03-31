@@ -1,7 +1,7 @@
 package com.github.mmvpm.service.dao.session
 
-import cats.data.EitherT
 import cats.Applicative
+import cats.data.EitherT
 import cats.effect.Sync
 import com.github.mmvpm.model.{Session, UserID}
 import com.github.mmvpm.service.dao.error._

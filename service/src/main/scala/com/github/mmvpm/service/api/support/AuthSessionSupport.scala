@@ -5,8 +5,8 @@ import com.github.mmvpm.service.api.SessionHeaderName
 import com.github.mmvpm.service.api.error.ApiError
 import com.github.mmvpm.service.service.auth.AuthService
 import sttp.model.headers.WWWAuthenticateChallenge
-import sttp.tapir.{Endpoint, PublicEndpoint, auth, header}
 import sttp.tapir.server.PartialServerEndpoint
+import sttp.tapir.{PublicEndpoint, auth, header}
 
 trait AuthSessionSupport[F[_]] {
 
