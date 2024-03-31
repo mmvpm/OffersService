@@ -13,7 +13,7 @@ import sttp.tapir.json.circe._
 import sttp.tapir.server.ServerEndpoint
 
 class UserHandler[F[_]: Functor](userService: UserService[F], override val authService: AuthService[F])
-  extends Handler[F]
+    extends Handler[F]
     with AuthSessionSupport[F]
     with ApiErrorSupport {
 

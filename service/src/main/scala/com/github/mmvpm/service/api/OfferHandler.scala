@@ -14,7 +14,7 @@ import sttp.tapir.json.circe._
 import sttp.tapir.server.ServerEndpoint
 
 class OfferHandler[F[_]: Applicative](offerService: OfferService[F], override val authService: AuthService[F])
-  extends Handler[F]
+    extends Handler[F]
     with AuthSessionSupport[F]
     with ApiErrorSupport {
 

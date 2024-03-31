@@ -56,10 +56,10 @@ class UserDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
       .attemptT
       .leftMap {
         case DuplicateKeyException(_) => UserAlreadyExistsDaoError(user.user.login)
-        case error => InternalUserDaoError(error.getMessage)
+        case error                    => InternalUserDaoError(error.getMessage)
       }
-      .flatMap {
-        res => EitherT.cond(res, (), InternalUserDaoError(s"$res rows was inserted"))
+      .flatMap { res =>
+        EitherT.cond(res, (), InternalUserDaoError("no rows was inserted"))
       }
 
   override def updateUser(userId: UserID, patch: UserPatch): EitherT[F, UserDaoError, Unit] =
@@ -95,8 +95,7 @@ class UserDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
   }
 
   private def updateOffersEntryRaw(userId: UserID, patch: UserPatch): ConnectionIO[Boolean] =
-    (fr"update users set " ++ sqlByPatch(patch) ++ fr" where id = $userId")
-      .update.run.map(_ == 1)
+    (fr"update users set " ++ sqlByPatch(patch) ++ fr" where id = $userId").update.run.map(_ == 1)
 
   // internal
 

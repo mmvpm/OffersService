@@ -16,7 +16,7 @@ import sttp.tapir.model.UsernamePassword
 import sttp.tapir.server.ServerEndpoint
 
 class AuthHandler[F[_]: Monad](override val authService: AuthService[F], userService: UserService[F])
-  extends Handler[F]
+    extends Handler[F]
     with AuthBasicSupport[F]
     with ApiErrorSupport {
 
