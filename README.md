@@ -65,6 +65,10 @@ Use session in some request:
 
 ### Telegram-bot
 
-State machine diagram:
+State machine diagram (without authorization to simplify):
 
 <img src="docs/bot-state-machine.png" alt="bot-state-machine"/>
+
+And authorization separately:
+
+<img src="docs/bot-state-machine-auth.png" alt="bot-state-machine-auth"/>
