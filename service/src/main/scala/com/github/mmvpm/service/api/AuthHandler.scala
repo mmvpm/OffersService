@@ -20,7 +20,7 @@ class AuthHandler[F[_]: Monad](override val authService: AuthService[F], userSer
 
   private val signUp: ServerEndpoint[Any, F] =
     endpoint.withApiErrors.post
-      .summary("Зарегистрировать нового пользователя")
+      .summary("Register a new user")
       .in("api" / "v1" / "auth" / "sign-up")
       .in(jsonBody[SignUpRequest])
       .out(jsonBody[UserResponse])
@@ -28,14 +28,14 @@ class AuthHandler[F[_]: Monad](override val authService: AuthService[F], userSer
 
   private val signIn: ServerEndpoint[Any, F] =
     endpoint.withApiErrors.withLoginPassword.post
-      .summary("Обменять логин и пароль на сессию")
+      .summary("Get session by login and password")
       .in("api" / "v1" / "auth" / "sign-in")
       .out(jsonBody[SessionResponse])
       .serverLogic(userId => _ => authService.getSession(userId).value)
 
   private val whoAmI: ServerEndpoint[Any, F] =
     endpoint.withApiErrors.get
-      .summary("Получить ID пользователя по сессии")
+      .summary("Get user ID by their session")
       .in("api" / "v1" / "auth" / "whoami" / path[Session]("session"))
       .out(jsonBody[UserIdResponse])
       .serverLogic(authService.whoami(_).value)

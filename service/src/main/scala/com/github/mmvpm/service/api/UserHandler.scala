@@ -19,14 +19,14 @@ class UserHandler[F[_]: Functor](userService: UserService[F], override val authS
 
   private val getUser: ServerEndpoint[Any, F] =
     endpoint.withApiErrors.get
-      .summary("Получить пользователя по его id")
+      .summary("Get the user by their ID")
       .in("api" / "v1" / "user" / path[UserID]("user-id"))
       .out(jsonBody[UserResponse])
       .serverLogic(userService.getUser(_).value)
 
   private val deleteUser: ServerEndpoint[Any, F] =
     endpoint.withApiErrors.withSession.delete
-      .summary("Удалить свой профиль")
+      .summary("Delete own profile")
       .in("api" / "v1" / "user")
       .out(jsonBody[OkResponse])
       .serverLogic(userId => _ => userService.deleteUser(userId).value)
