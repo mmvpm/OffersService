@@ -12,48 +12,48 @@ object SchemaInstances {
   // model
 
   implicit val schemaOfferStatus: Schema[OfferStatus] =
-    Schema.derivedEnumerationValue.description("Статус объявления")
+    Schema.derivedEnumerationValue.description("Offer status")
 
   implicit val schemaOfferDescription: Schema[OfferDescription] =
-    Schema.derived.description("Задаваемые пользователем поля объявления")
+    Schema.derived.description("User-defined offer fields")
 
   implicit val schemaOffer: Schema[Offer] =
-    Schema.derived.description("Объявление")
+    Schema.derived.description("Offer")
 
   implicit val schemaUserStatus: Schema[UserStatus] =
-    Schema.derivedEnumerationValue.description("Статус пользователя")
+    Schema.derivedEnumerationValue.description("User status")
 
   implicit val schemaUser: Schema[User] =
-    Schema.derived.description("Пользователь")
+    Schema.derived.description("User")
 
   // requests
 
   implicit val schemaSignUpRequest: Schema[SignUpRequest] =
-    Schema.derived.description("Запрос на регистрацию пользователя")
+    Schema.derived.description("Request to register a new user")
 
   implicit val schemaUpdateOfferRequest: Schema[UpdateOfferRequest] =
-    Schema.derived.description("Запрос на изменение объявления")
+    Schema.derived.description("Request to update the offer")
 
   implicit val schemaCreateOfferRequest: Schema[CreateOfferRequest] =
-    Schema.derived.description("Запрос на создание объявления")
+    Schema.derived.description("Request to create an offer")
 
   // responses
 
   implicit val schemaOkResponse: Schema[OkResponse] =
-    Schema.derived.description("Успех")
+    Schema.derived.description("Success")
 
   implicit val schemaSessionResponse: Schema[SessionResponse] =
-    Schema.derived.description("Сессия пользователя")
+    Schema.derived.description("User session")
 
   implicit val schemaUserResponse: Schema[UserResponse] =
-    Schema.derived.description("Пользователь")
+    Schema.derived.description("User")
 
   implicit val schemaUserIdResponse: Schema[UserIdResponse] =
-    Schema.derived.description("ID пользователя")
+    Schema.derived.description("User ID")
 
   implicit val schemaOfferResponse: Schema[OfferResponse] =
-    Schema.derived.description("Объявление")
+    Schema.derived.description("Offer")
 
   implicit val schemaOffersResponse: Schema[OffersResponse] =
-    Schema.derived.description("Список объявлений")
+    Schema.derived.description("List of offers")
 }

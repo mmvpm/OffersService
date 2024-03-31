@@ -20,21 +20,21 @@ class OfferHandler[F[_]: Applicative](offerService: OfferService[F], override va
 
   private val getOffer: ServerEndpoint[Any, F] =
     endpoint.withApiErrors.get
-      .summary("Получить объявление по его id")
+      .summary("Get the offer by its ID")
       .in("api" / "v1" / "offer" / path[OfferID]("offer-id"))
       .out(jsonBody[OfferResponse])
       .serverLogic(offerService.getOffer(_).value)
 
   private val getOffers: ServerEndpoint[Any, F] =
     endpoint.withApiErrors.get
-      .summary("Получить все объявления данного пользователя")
+      .summary("Get all offers of the specified user")
       .in("api" / "v1" / "offer" / "user" / path[UserID]("user-id"))
       .out(jsonBody[OffersResponse])
       .serverLogic(offerService.getOffers(_).value)
 
   private val createOffer: ServerEndpoint[Any, F] =
     endpoint.withApiErrors.withSession.post
-      .summary("Создать объявление")
+      .summary("Create an offer")
       .in("api" / "v1" / "offer")
       .in(jsonBody[CreateOfferRequest])
       .out(jsonBody[OfferResponse])
@@ -42,7 +42,7 @@ class OfferHandler[F[_]: Applicative](offerService: OfferService[F], override va
 
   private val updateOffer: ServerEndpoint[Any, F] =
     endpoint.withApiErrors.withSession.put
-      .summary("Изменить объявление")
+      .summary("Update the offer")
       .in("api" / "v1" / "offer" / path[OfferID]("offer-id"))
       .in(jsonBody[UpdateOfferRequest])
       .out(jsonBody[OfferResponse])
@@ -52,7 +52,7 @@ class OfferHandler[F[_]: Applicative](offerService: OfferService[F], override va
 
   private val deleteOffer: ServerEndpoint[Any, F] =
     endpoint.withApiErrors.withSession.delete
-      .summary("Удалить объявление")
+      .summary("Delete the offer")
       .in("api" / "v1" / "offer" / path[OfferID]("offer-id"))
       .out(jsonBody[OkResponse])
       .serverLogic(userId => offerId => offerService.deleteOffer(userId, offerId).value)
