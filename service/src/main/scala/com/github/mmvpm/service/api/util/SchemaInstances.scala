@@ -37,6 +37,9 @@ object SchemaInstances {
   implicit val schemaCreateOfferRequest: Schema[CreateOfferRequest] =
     Schema.derived.description("Request to create an offer")
 
+  implicit val schemaGetOffersRequest: Schema[GetOffersRequest] =
+    Schema.derived.description("Request to get offers by their ids")
+
   // responses
 
   implicit val schemaOkResponse: Schema[OkResponse] =

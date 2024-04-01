@@ -1,19 +1,23 @@
 package com.github.mmvpm.bot.state
 
 import cats.Monad
-import cats.implicits.toFlatMapOps
+import cats.data.EitherT
+import cats.effect.kernel.MonadCancelThrow
+import cats.implicits.{catsSyntaxApplicativeError, toFlatMapOps, toFunctorOps}
 import com.bot4s.telegram.models.Message
 import com.github.mmvpm.bot.manager.ofs.OfsManager
+import com.github.mmvpm.bot.manager.ofs.error.OfsError
 import com.github.mmvpm.bot.manager.ofs.error.OfsError.InvalidSession
-import com.github.mmvpm.bot.model.Draft
+import com.github.mmvpm.bot.model.{Draft, OfferPatch}
 import com.github.mmvpm.bot.state.State.{Listing, _}
 import com.github.mmvpm.bot.util.StateUtils.StateSyntax
+import com.github.mmvpm.bot.util.StringUtils.RichString
 import com.github.mmvpm.model.{Offer, OfferDescription, OfferStatus}
 
 import java.util.UUID
 import scala.util.Random
 
-class StateManagerImpl[F[_]: Monad](ofsManager: OfsManager[F]) extends StateManager[F] {
+class StateManagerImpl[F[_]: MonadCancelThrow](ofsManager: OfsManager[F]) extends StateManager[F] {
 
   override def getNextState(tag: String, current: State)(implicit message: Message): F[State] =
     tag match {
@@ -78,7 +82,7 @@ class StateManagerImpl[F[_]: Monad](ofsManager: OfsManager[F]) extends StateMana
   private def toCreateOfferDescription(current: State)(implicit message: Message): F[State] = {
     val newState = for {
       priceRaw <- message.text
-      price <- priceRaw.toLongOption
+      price <- priceRaw.toIntOption
       draft <- current match {
         case CreateOfferPrice(_, draft) => Some(draft)
         case _                          => None
@@ -115,17 +119,17 @@ class StateManagerImpl[F[_]: Monad](ofsManager: OfsManager[F]) extends StateMana
   private def toCreatedOffer(current: State)(implicit message: Message): F[State] =
     current match {
       case CreateOfferPhoto(_, draft) if draft.toOfferDescription.nonEmpty =>
-        ofsManager.createOffer(draft.toOfferDescription.get).value.flatMap {
-          case Right(_)             => CreatedOffer(current, draft).pure
-          case Left(InvalidSession) => EnterPassword.pure
-          case Left(error)          => Error(current, s"Произошла ошибка: ${error.details}. Попробуйте ещё раз").pure
-        }
+        ofsManager
+          .createOffer(draft.toOfferDescription.get)
+          .handleDefaultErrors(current, ifSuccess = _ => CreatedOffer(current, draft).pure)
+
       case _ =>
         Error(current, "Произошла ошибка! Попробуйте ещё раз").pure
     }
 
   private def toMyOffers(current: State)(implicit message: Message): F[State] =
-    MyOffers(current, getOffers(5)).pure
+    ofsManager.getMyOffers
+      .handleDefaultErrors(current, ifSuccess = MyOffers(current, _).pure)
 
   private def getOffers(maxLength: Int): Seq[Offer] =
     (0 until Random.nextInt(maxLength)).map { index =>
@@ -135,73 +139,115 @@ class StateManagerImpl[F[_]: Monad](ofsManager: OfsManager[F]) extends StateMana
   private def toMyOffer(current: State)(implicit message: Message): F[State] = {
     val optOffer = for {
       offerId <- message.text
+      if offerId.isUUID
       offers <- current match {
         case MyOffers(_, offers) => Some(offers)
         case _                   => None
       }
-      offer <- offers.find(_.id == UUID.fromString(offerId))
+      offer <- offers.find(_.id == offerId.toUUID)
     } yield offer
 
     optOffer match {
-      case Some(offer) => MyOffer(current, offer).pure
-      case None        => Error(current, "К сожалению, такого id не существует! Попробуйте ещё раз").pure
+      case Some(offerId) => MyOffer(current, offerId).pure
+      case None          => Error(current, "К сожалению, такого id не существует! Попробуйте ещё раз").pure
     }
   }
 
   private def toEditOffer(current: State)(implicit message: Message): F[State] =
-    EditOffer(current).pure
+    current match {
+      case state: WithOfferID => EditOffer(current, state.offerId).pure
+      case _                  => Error(current, "Произошла ошибка! Попробуйте ещё раз").pure
+    }
 
   private def toEditOfferName(current: State)(implicit message: Message): F[State] =
-    EditOfferName(current).pure
+    current match {
+      case state: WithOfferID => EditOfferName(current, state.offerId).pure
+      case _                  => Error(current, "Произошла ошибка! Попробуйте ещё раз").pure
+    }
 
   private def toEditOfferPrice(current: State)(implicit message: Message): F[State] =
-    EditOfferPrice(current).pure
+    current match {
+      case state: WithOfferID => EditOfferPrice(current, state.offerId).pure
+      case _                  => Error(current, "Произошла ошибка! Попробуйте ещё раз").pure
+    }
 
   private def toEditOfferDescription(current: State)(implicit message: Message): F[State] =
-    EditOfferDescription(current).pure
+    current match {
+      case state: WithOfferID => EditOfferDescription(current, state.offerId).pure
+      case _                  => Error(current, "Произошла ошибка! Попробуйте ещё раз").pure
+    }
 
   private def toAddOfferPhoto(current: State)(implicit message: Message): F[State] =
-    AddOfferPhoto(current).pure
+    current match {
+      case state: WithOfferID => AddOfferPhoto(current, state.offerId).pure
+      case _                  => Error(current, "Произошла ошибка! Попробуйте ещё раз").pure
+    }
 
   private def toDeleteOfferPhotos(current: State)(implicit message: Message): F[State] =
     UpdatedOffer(current, "Все фотографии были удалены из объявления").pure
 
   private def toUpdatedOffer(current: State)(implicit message: Message): F[State] =
     current match {
-      case EditOfferName(_) =>
+      case EditOfferName(_, offerId) =>
         message.text match {
           case Some(newName) =>
-            UpdatedOffer(current, s"Название было изменено на \"$newName\"").pure
+            ofsManager
+              .updateOffer(offerId, OfferPatch(name = Some(newName)))
+              .handleDefaultErrors(
+                current,
+                ifSuccess = _ => UpdatedOffer(current, s"Название было изменено на \"$newName\"").pure
+              )
           case None =>
             Error(current, "Пожалуйста, введите новое название объявления").pure
         }
-      case EditOfferPrice(_) =>
+
+      case EditOfferPrice(_, offerId) =>
         message.text.flatMap(_.toIntOption) match {
           case Some(newPrice) =>
-            UpdatedOffer(current, s"Цена была изменена на $newPrice").pure
+            ofsManager
+              .updateOffer(offerId, OfferPatch(price = Some(newPrice)))
+              .handleDefaultErrors(
+                current,
+                ifSuccess = _ => UpdatedOffer(current, s"Цена была изменена на $newPrice").pure
+              )
           case None =>
             Error(current, "Пожалуйста, введите новую цену (целое число рублей)").pure
         }
-      case EditOfferDescription(_) =>
+
+      case EditOfferDescription(_, offerId) =>
         message.text match {
           case Some(newDescription) =>
-            UpdatedOffer(current, s"Описание было изменено").pure
+            ofsManager
+              .updateOffer(offerId, OfferPatch(description = Some(newDescription)))
+              .handleDefaultErrors(
+                current,
+                ifSuccess = _ => UpdatedOffer(current, s"Описание было изменено").pure
+              )
           case None =>
             Error(current, "Пожалуйста, введите новое описание объявления").pure
         }
-      case AddOfferPhoto(_) =>
+
+      case AddOfferPhoto(_, _) =>
         message.photo.flatMap(_.lastOption) match {
           case Some(newPhoto) =>
             UpdatedOffer(current, s"Фотография была добавлена к объявлению").pure
           case None =>
             Error(current, "Пожалуйста, загрузите фото").pure
         }
+
       case _ =>
         Error(current, "Произошла ошибка! Попробуйте ещё раз").pure
     }
 
   private def toDeleteOffer(current: State)(implicit message: Message): F[State] =
-    DeletedOffer(current).pure
+    current match {
+      case state: WithOfferID =>
+        ofsManager
+          .deleteOffer(state.offerId)
+          .handleDefaultErrors(current, ifSuccess = _ => DeletedOffer(current).pure)
+      case _ =>
+        Error(current, "Произошла ошибка! Попробуйте ещё раз").pure
+    }
 
   private def toLoggedIn(current: State)(implicit message: Message): F[State] =
     message.text match {
@@ -219,17 +265,60 @@ class StateManagerImpl[F[_]: Monad](ofsManager: OfsManager[F]) extends StateMana
       case DeletedOffer(previous) =>
         previous.optPrevious.getOrElse(Started).pure
       case UpdatedOffer(previous, _) =>
-        // returns the nearest EditOffer
-        previous match {
-          case EditOffer(_) => previous.pure
-          case _            => previous.optPrevious.getOrElse(Started).pure
+        val nearestEditOffer = previous match {
+          case EditOffer(_, _) => previous
+          case _               => previous.optPrevious.getOrElse(Started)
         }
+        safeRefreshOffers(nearestEditOffer)
       case _ =>
         current.optPrevious.getOrElse(Started).pure
     }
 
-  // internal
-
   private def toStarted(current: State)(implicit message: Message): F[State] =
     Started.pure
+
+  // internal
+
+  implicit class RichOfsManagerResponse[Result](result: EitherT[F, OfsError, Result]) {
+    def handleDefaultErrors(current: State, ifSuccess: Result => F[State]): F[State] =
+      result.value.flatMap {
+        case Right(offers)        => ifSuccess(offers)
+        case Left(InvalidSession) => EnterPassword.pure
+        case Left(error)          => Error(current, s"Произошла ошибка: ${error.details}. Попробуйте ещё раз").pure
+      }
+  }
+
+  private def safeRefreshOffers(current: State): F[State] =
+    refreshOffers(current).recover(_ => current)
+
+  private def refreshOffers: State => F[State] = {
+    case Started =>
+      Started.pure
+
+    case MyOffer(previous, previousOffer) =>
+      for {
+        result <- ofsManager.getOffer(previousOffer.id).value
+        freshOffer = result match {
+          case Right(Some(offer)) => offer
+          case _                  => previousOffer
+        }
+        freshPrevious <- refreshOffers(previous)
+      } yield MyOffer(freshPrevious, freshOffer)
+
+    case MyOffers(previous, previousOffers) =>
+      for {
+        result <- ofsManager.getOffers(previousOffers.map(_.id)).value
+        freshOffers = result match {
+          case Right(offers) => offers
+          case _             => previousOffers
+        }
+        freshPrevious <- refreshOffers(previous)
+      } yield MyOffers(freshPrevious, freshOffers)
+
+    case current if current.optPrevious.nonEmpty =>
+      refreshOffers(current.optPrevious.get)
+
+    case current =>
+      current.pure
+  }
 }

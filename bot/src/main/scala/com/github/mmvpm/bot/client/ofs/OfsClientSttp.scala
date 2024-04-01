@@ -2,13 +2,15 @@ package com.github.mmvpm.bot.client.ofs
 
 import cats.data.EitherT
 import cats.MonadThrow
-import cats.implicits.{toBifunctorOps, toFunctorOps}
-import com.github.mmvpm.model.{OfferDescription, Session}
+import cats.implicits.{catsSyntaxApplicativeError, toBifunctorOps, toFunctorOps}
+import com.github.mmvpm.model.{OfferDescription, OfferID, Session}
 import com.github.mmvpm.bot.OfsConfig
 import com.github.mmvpm.bot.client.ofs.request._
 import com.github.mmvpm.bot.client.ofs.response._
 import com.github.mmvpm.bot.client.ofs.error._
 import io.circe.generic.auto._
+import com.github.mmvpm.bot.client.ofs.util.CirceInstances._
+import com.github.mmvpm.bot.model.{Draft, OfferPatch}
 import io.circe.Error
 import sttp.client3._
 import sttp.client3.circe._
@@ -26,11 +28,12 @@ class OfsClientSttp[F[_]: MonadThrow](ofsConfig: OfsConfig, sttpBackend: SttpBac
       .readTimeout(ofsConfig.requestTimeout)
       .send(sttpBackend)
       .map(_.body.leftMap(parseFailure))
+      .recover(error => Left(OfsUnknownClientError(error.getMessage)))
 
     EitherT(response)
   }
 
-  override def signIn(login: String, password: String): EitherT[F, OfsClientError, SignInResponse] = {
+  def signIn(login: String, password: String): EitherT[F, OfsClientError, SignInResponse] = {
     val requestUri = uri"${ofsConfig.baseUrl}/api/v1/auth/sign-in"
 
     val response = basicRequest
@@ -41,11 +44,70 @@ class OfsClientSttp[F[_]: MonadThrow](ofsConfig: OfsConfig, sttpBackend: SttpBac
       .readTimeout(ofsConfig.requestTimeout)
       .send(sttpBackend)
       .map(_.body.leftMap(parseFailure))
+      .recover(error => Left(OfsUnknownClientError(error.getMessage)))
 
     EitherT(response)
   }
 
-  override def createOffer(
+  def whoami(session: Session): EitherT[F, OfsClientError, UserIdResponse] = {
+    val requestUri = uri"${ofsConfig.baseUrl}/api/v1/auth/whoami/$session"
+
+    val response = basicRequest
+      .get(requestUri)
+      .response(asJsonEither[OfsApiClientError, UserIdResponse])
+      .readTimeout(ofsConfig.requestTimeout)
+      .send(sttpBackend)
+      .map(_.body.leftMap(parseFailure))
+      .recover(error => Left(OfsUnknownClientError(error.getMessage)))
+
+    EitherT(response)
+  }
+
+  def getOffer(offerId: OfferID): EitherT[F, OfsClientError, OfferResponse] = {
+    val requestUri = uri"${ofsConfig.baseUrl}/api/v1/offer/$offerId"
+
+    val response = basicRequest
+      .get(requestUri)
+      .response(asJsonEither[OfsApiClientError, OfferResponse])
+      .readTimeout(ofsConfig.requestTimeout)
+      .send(sttpBackend)
+      .map(_.body.leftMap(parseFailure))
+      .recover(error => Left(OfsUnknownClientError(error.getMessage)))
+
+    EitherT(response)
+  }
+
+  def getOffers(offerIds: Seq[OfferID]): EitherT[F, OfsClientError, OffersResponse] = {
+    val requestUri = uri"${ofsConfig.baseUrl}/api/v1/offer/list"
+
+    val response = basicRequest
+      .post(requestUri)
+      .body(GetOffersRequest(offerIds.toList))
+      .response(asJsonEither[OfsApiClientError, OffersResponse])
+      .readTimeout(ofsConfig.requestTimeout)
+      .send(sttpBackend)
+      .map(_.body.leftMap(parseFailure))
+      .recover(error => Left(OfsUnknownClientError(error.getMessage)))
+
+    EitherT(response)
+  }
+
+  def getMyOffers(session: Session): EitherT[F, OfsClientError, OffersResponse] = {
+    val requestUri = uri"${ofsConfig.baseUrl}/api/v1/offer/list/my"
+
+    val response = basicRequest
+      .get(requestUri)
+      .header(SessionHeaderName, session.toString)
+      .response(asJsonEither[OfsApiClientError, OffersResponse])
+      .readTimeout(ofsConfig.requestTimeout)
+      .send(sttpBackend)
+      .map(_.body.leftMap(parseFailure))
+      .recover(error => Left(OfsUnknownClientError(error.getMessage)))
+
+    EitherT(response)
+  }
+
+  def createOffer(
       session: Session,
       description: OfferDescription
   ): EitherT[F, OfsClientError, CreateOfferResponse] = {
@@ -60,19 +122,38 @@ class OfsClientSttp[F[_]: MonadThrow](ofsConfig: OfsConfig, sttpBackend: SttpBac
       .readTimeout(ofsConfig.requestTimeout)
       .send(sttpBackend)
       .map(_.body.leftMap(parseFailure))
+      .recover(error => Left(OfsUnknownClientError(error.getMessage)))
 
     EitherT(response)
   }
 
-  def whoami(session: Session): EitherT[F, OfsClientError, UserIdResponse] = {
-    val requestUri = uri"${ofsConfig.baseUrl}/api/v1/auth/whoami/$session"
+  def updateOffer(session: Session, offerId: OfferID, patch: OfferPatch): EitherT[F, OfsClientError, OfferResponse] = {
+    val requestUri = uri"${ofsConfig.baseUrl}/api/v1/offer/$offerId"
 
     val response = basicRequest
-      .get(requestUri)
-      .response(asJsonEither[OfsApiClientError, UserIdResponse])
+      .put(requestUri)
+      .body(patch.toUpdateOfferRequest)
+      .header(SessionHeaderName, session.toString)
+      .response(asJsonEither[OfsApiClientError, OfferResponse])
       .readTimeout(ofsConfig.requestTimeout)
       .send(sttpBackend)
       .map(_.body.leftMap(parseFailure))
+      .recover(error => Left(OfsUnknownClientError(error.getMessage)))
+
+    EitherT(response)
+  }
+
+  def deleteOffer(session: Session, offerId: OfferID): EitherT[F, OfsClientError, OkResponse] = {
+    val requestUri = uri"${ofsConfig.baseUrl}/api/v1/offer/$offerId"
+
+    val response = basicRequest
+      .delete(requestUri)
+      .header(SessionHeaderName, session.toString)
+      .response(asJsonEither[OfsApiClientError, OkResponse])
+      .readTimeout(ofsConfig.requestTimeout)
+      .send(sttpBackend)
+      .map(_.body.leftMap(parseFailure))
+      .recover(error => Left(OfsUnknownClientError(error.getMessage)))
 
     EitherT(response)
   }

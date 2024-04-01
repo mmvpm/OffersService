@@ -2,7 +2,7 @@ package com.github.mmvpm.service.api
 
 import cats.Applicative
 import com.github.mmvpm.model.{OfferID, UserID}
-import com.github.mmvpm.service.api.request.{CreateOfferRequest, UpdateOfferRequest}
+import com.github.mmvpm.service.api.request.{CreateOfferRequest, GetOffersRequest, UpdateOfferRequest}
 import com.github.mmvpm.service.api.response.{OfferResponse, OffersResponse, OkResponse}
 import com.github.mmvpm.service.api.support.{ApiErrorSupport, AuthSessionSupport}
 import com.github.mmvpm.service.api.util.CirceInstances._
@@ -25,12 +25,27 @@ class OfferHandler[F[_]: Applicative](offerService: OfferService[F], override va
       .out(jsonBody[OfferResponse])
       .serverLogic(offerService.getOffer(_).value)
 
+  private val getOffersByIds: ServerEndpoint[Any, F] =
+    endpoint.withApiErrors.post
+      .summary("Get all offers of the specified user")
+      .in("api" / "v1" / "offer" / "list")
+      .in(jsonBody[GetOffersRequest])
+      .out(jsonBody[OffersResponse])
+      .serverLogic(offerService.getOffers(_).value)
+
   private val getOffers: ServerEndpoint[Any, F] =
     endpoint.withApiErrors.get
       .summary("Get all offers of the specified user")
-      .in("api" / "v1" / "offer" / "user" / path[UserID]("user-id"))
+      .in("api" / "v1" / "offer" / "list" / "user" / path[UserID]("user-id"))
       .out(jsonBody[OffersResponse])
       .serverLogic(offerService.getOffers(_).value)
+
+  private val getMyOffers: ServerEndpoint[Any, F] =
+    endpoint.withApiErrors.withSession.get
+      .summary("Get all my offers")
+      .in("api" / "v1" / "offer" / "list" / "my")
+      .out(jsonBody[OffersResponse])
+      .serverLogic(userId => _ => offerService.getOffers(userId).value)
 
   private val createOffer: ServerEndpoint[Any, F] =
     endpoint.withApiErrors.withSession.post
@@ -58,5 +73,7 @@ class OfferHandler[F[_]: Applicative](offerService: OfferService[F], override va
       .serverLogic(userId => offerId => offerService.deleteOffer(userId, offerId).value)
 
   override def endpoints: List[ServerEndpoint[Any, F]] =
-    List(getOffer, getOffers, createOffer, updateOffer, deleteOffer).map(_.withTag("offer"))
+    List(getOffer, getOffersByIds, getOffers, getMyOffers, createOffer, updateOffer, deleteOffer).map(
+      _.withTag("offer")
+    )
 }
