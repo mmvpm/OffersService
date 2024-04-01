@@ -31,12 +31,17 @@ class OfferDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
         case error         => InternalOfferDaoError(error.getMessage)
       }
 
-  override def getOffers(offerIds: NonEmptyList[OfferID]): EitherT[F, OfferDaoError, List[Offer]] =
-    selectFromOffers(offerIds)
-      .map(_.map(_.toOffer))
-      .transact(tr)
-      .attemptT
-      .leftMap(error => InternalOfferDaoError(error.getMessage))
+  override def getOffers(offerIds: List[OfferID]): EitherT[F, OfferDaoError, List[Offer]] =
+    NonEmptyList.fromList(offerIds) match {
+      case None =>
+        EitherT.pure(List.empty[Offer])
+      case Some(nel) =>
+        selectFromOffers(nel)
+          .map(_.map(_.toOffer))
+          .transact(tr)
+          .attemptT
+          .leftMap(error => InternalOfferDaoError(error.getMessage))
+    }
 
   override def getOffersByUser(userId: UserID): EitherT[F, OfferDaoError, List[Offer]] =
     selectFromOffersByUser(userId)

@@ -45,6 +45,9 @@ case object CirceInstances {
   implicit val decoderCreateOfferRequest: Decoder[CreateOfferRequest] = deriveDecoder
   implicit val encoderCreateOfferRequest: Encoder[CreateOfferRequest] = deriveEncoder
 
+  implicit val decoderGetOffersRequest: Decoder[GetOffersRequest] = deriveDecoder
+  implicit val encoderGetOffersRequest: Encoder[GetOffersRequest] = deriveEncoder
+
   // responses
 
   implicit val decoderOkResponse: Decoder[OkResponse] = deriveDecoder

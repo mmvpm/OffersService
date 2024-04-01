@@ -6,7 +6,7 @@ import cats.implicits.toFunctorOps
 import cats.{Functor, Monad}
 import com.github.mmvpm.model._
 import com.github.mmvpm.service.api.error._
-import com.github.mmvpm.service.api.request.{CreateOfferRequest, UpdateOfferRequest}
+import com.github.mmvpm.service.api.request.{CreateOfferRequest, GetOffersRequest, UpdateOfferRequest}
 import com.github.mmvpm.service.api.response.{OfferResponse, OffersResponse, OkResponse}
 import com.github.mmvpm.service.dao.error._
 import com.github.mmvpm.service.dao.offer.OfferDao
@@ -19,6 +19,12 @@ class OfferServiceImpl[F[_]: Monad: UUIDGen](offerDao: OfferDao[F]) extends Offe
     offerDao
       .getOffer(offerId)
       .map(OfferResponse)
+      .convertError
+
+  def getOffers(request: GetOffersRequest): EitherT[F, ApiError, OffersResponse] =
+    offerDao
+      .getOffers(request.offerIds)
+      .map(OffersResponse)
       .convertError
 
   override def getOffers(userId: UserID): EitherT[F, ApiError, OffersResponse] =
@@ -50,14 +56,6 @@ class OfferServiceImpl[F[_]: Monad: UUIDGen](offerDao: OfferDao[F]) extends Offe
       .updateOffer(userId, offerId, OfferPatch(status = Some(OfferStatus.Deleted)))
       .as(OkResponse())
       .convertError
-
-  // internal
-
-  private def getOfferRaw(offerId: OfferID): EitherT[F, OfferDaoError, Offer] =
-    for {
-      offers <- offerDao.getOffers(NonEmptyList.one(offerId))
-      offer <- EitherT.fromOption(offers.headOption, OfferNotFoundDaoError(offerId): OfferDaoError)
-    } yield offer
 }
 
 object OfferServiceImpl {

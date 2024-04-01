@@ -1,20 +1,21 @@
 package com.github.mmvpm.bot.manager.ofs
 
-import cats.Monad
 import cats.data.EitherT
 import cats.effect.std.Random
 import cats.implicits.{toFunctorOps, toTraverseOps}
+import cats.{Functor, Monad}
 import com.bot4s.telegram.models.Message
 import com.github.mmvpm.bot.client.ofs.{OfsClient, error}
-import com.github.mmvpm.bot.client.ofs.error.OfsApiClientError
-import com.github.mmvpm.bot.client.ofs.response.{CreateOfferResponse, UserIdResponse}
+import com.github.mmvpm.bot.client.ofs.error.{OfsApiClientError, OfsClientError}
+import com.github.mmvpm.bot.client.ofs.response.UserIdResponse
 import com.github.mmvpm.bot.manager.ofs.OfsManagerImpl._
 import com.github.mmvpm.bot.manager.ofs.error.OfsError
 import com.github.mmvpm.bot.manager.ofs.error.OfsError._
 import com.github.mmvpm.bot.manager.ofs.response.LoginOrRegisterResponse
 import com.github.mmvpm.bot.manager.ofs.response.LoginOrRegisterResponse._
+import com.github.mmvpm.bot.model.{Draft, OfferPatch}
 import com.github.mmvpm.bot.state.Storage
-import com.github.mmvpm.model.{OfferDescription, Session}
+import com.github.mmvpm.model.{Offer, OfferDescription, OfferID, OfferStatus, Session}
 import sttp.model.StatusCode
 
 class OfsManagerImpl[F[_]: Monad](ofsClient: OfsClient[F], sessionStorage: Storage[Option[Session]], random: Random[F])
@@ -32,13 +33,46 @@ class OfsManagerImpl[F[_]: Monad](ofsClient: OfsClient[F], sessionStorage: Stora
   override def loginOrRegister(implicit message: Message): EitherT[F, OfsError, LoginOrRegisterResponse] =
     sessionStorage.get match {
       case None          => registerAndSaveSession
-      case Some(session) => checkSession(session).map(_ => LoggedIn(getName))
+      case Some(session) => checkSession(session).as(LoggedIn(getName))
     }
 
-  override def createOffer(description: OfferDescription)(implicit message: Message): EitherT[F, OfsError, Unit] =
+  def getOffer(offerId: OfferID): EitherT[F, OfsError, Option[Offer]] =
+    ofsClient
+      .getOffer(offerId)
+      .map(response => Option(response.offer))
+      .recover { case OfsApiClientError(_, StatusCode.NotFound.code, _) =>
+        None
+      }
+      .handleDefaultErrors
+
+  def getOffers(offerIds: Seq[OfferID]): EitherT[F, OfsError, List[Offer]] =
+    ofsClient
+      .getOffers(offerIds)
+      .map(_.offers)
+      .handleDefaultErrors
+
+  def getMyOffers(implicit message: Message): EitherT[F, OfsError, List[Offer]] =
     sessionStorage.get match {
       case None          => EitherT.leftT(InvalidSession)
-      case Some(session) => createOffer(session, description).void
+      case Some(session) => getMyOffers(session)
+    }
+
+  def createOffer(description: OfferDescription)(implicit message: Message): EitherT[F, OfsError, Unit] =
+    sessionStorage.get match {
+      case None          => EitherT.leftT(InvalidSession)
+      case Some(session) => createOffer(session, description)
+    }
+
+  def updateOffer(offerId: OfferID, patch: OfferPatch)(implicit message: Message): EitherT[F, OfsError, Unit] =
+    sessionStorage.get match {
+      case None          => EitherT.leftT(InvalidSession)
+      case Some(session) => updateOffer(session, offerId, patch)
+    }
+
+  def deleteOffer(offerId: OfferID)(implicit message: Message): EitherT[F, OfsError, Unit] =
+    sessionStorage.get match {
+      case None          => EitherT.leftT(InvalidSession)
+      case Some(session) => deleteOffer(session, offerId)
     }
 
   // internal
@@ -61,10 +95,7 @@ class OfsManagerImpl[F[_]: Monad](ofsClient: OfsClient[F], sessionStorage: Stora
   private def checkSession(session: Session): EitherT[F, OfsError, UserIdResponse] =
     ofsClient
       .whoami(session)
-      .leftMap {
-        case OfsApiClientError(_, _, _) => InvalidSession: OfsError
-        case error                      => OfsSomeError(error.details)
-      }
+      .handleDefaultErrors
 
   private def registerAndSaveSession(implicit message: Message): EitherT[F, OfsError, LoginOrRegisterResponse] =
     (for {
@@ -78,15 +109,40 @@ class OfsManagerImpl[F[_]: Monad](ofsClient: OfsClient[F], sessionStorage: Stora
         case error                      => OfsSomeError(error.details)
       }
 
-  private def createOffer(session: Session, description: OfferDescription): EitherT[F, OfsError, CreateOfferResponse] =
+  private def getMyOffers(session: Session): EitherT[F, OfsError, List[Offer]] =
+    ofsClient
+      .getMyOffers(session)
+      .map(_.offers.filter(_.status == OfferStatus.Active))
+      .handleDefaultErrors
+
+  private def createOffer(session: Session, description: OfferDescription): EitherT[F, OfsError, Unit] =
     ofsClient
       .createOffer(session, description)
-      .leftMap {
-        case OfsApiClientError(_, StatusCode.Unauthorized.code, _) => InvalidSession: OfsError
-        case error                                                 => OfsSomeError(error.details)
-      }
+      .void
+      .handleDefaultErrors
+
+  private def deleteOffer(session: Session, offerId: OfferID): EitherT[F, OfsError, Unit] =
+    ofsClient
+      .deleteOffer(session, offerId)
+      .void
+      .handleDefaultErrors
+
+  private def updateOffer(session: Session, offerId: OfferID, patch: OfferPatch): EitherT[F, OfsError, Unit] =
+    ofsClient
+      .updateOffer(session, offerId, patch)
+      .void
+      .handleDefaultErrors
 }
 
 object OfsManagerImpl {
+
   private val PasswordLength = 10
+
+  implicit class RichClientResponse[F[_]: Functor, R](response: EitherT[F, OfsClientError, R]) {
+    def handleDefaultErrors: EitherT[F, OfsError, R] =
+      response.leftMap {
+        case OfsApiClientError(_, StatusCode.Unauthorized.code, _) => InvalidSession: OfsError
+        case error                                                 => OfsSomeError(error.details)
+      }
+  }
 }

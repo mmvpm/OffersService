@@ -1,7 +1,7 @@
 package com.github.mmvpm.bot.state
 
 import com.github.mmvpm.bot.model.{Button, Draft, Tag}
-import com.github.mmvpm.model.Offer
+import com.github.mmvpm.model.{Offer, OfferID}
 
 sealed trait State {
   def tag: Tag
@@ -68,10 +68,10 @@ object State {
       case CreateOfferPrice(_, _)       => CreateOfferDescriptionTag
       case CreateOfferDescription(_, _) => CreateOfferPhotoTag
       case CreateOfferPhoto(_, _)       => CreateOfferPhotoTag // upload another photo
-      case EditOfferName(_)             => UpdatedOfferTag
-      case EditOfferPrice(_)            => UpdatedOfferTag
-      case EditOfferDescription(_)      => UpdatedOfferTag
-      case AddOfferPhoto(_)             => UpdatedOfferTag
+      case EditOfferName(_, _)          => UpdatedOfferTag
+      case EditOfferPrice(_, _)         => UpdatedOfferTag
+      case EditOfferDescription(_, _)   => UpdatedOfferTag
+      case AddOfferPhoto(_, _)          => UpdatedOfferTag
       case EnterPassword                => LoggedInTag
       case _                            => UnknownTag
     }
@@ -84,6 +84,12 @@ object State {
 
   trait WithPrevious extends State { self: { val previous: State } =>
     val optPrevious: Option[State] = Some(self.previous)
+  }
+
+  // offer_id
+
+  trait WithOfferID {
+    def offerId: OfferID
   }
 
   // sign-in & sign-up
@@ -210,52 +216,55 @@ object State {
       s"""
          |Все ваши объявления:
          |
-         |${offers.map(_.id).mkString("-`", "`\n-`", "`")}
+         |${offers.map(o => s"- ${o.id}: ${o.description.name}").mkString("\n")}
          |
          |Если хотите посмотреть одно подробнее, напишите мне его id
          |""".stripMargin
   }
 
-  case class MyOffer(previous: State, offer: Offer) extends State with WithPrevious {
+  case class MyOffer(previous: State, offer: Offer) extends State with WithPrevious with WithOfferID {
+    val offerId: OfferID = offer.id
     val tag: Tag = MyOfferTag
     val next: Seq[Tag] = Seq(EditOfferTag, DeletedOfferTag, BackTag)
     val text: String =
       s"""
          |Ваше объявление:
          |
-         |- id: ${offer.id}
-         |- data: ${offer.description}
+         |- ID: ${offer.id}
+         |- Название: ${offer.description.name}
+         |- Цена: ${offer.description.price}
+         |- Описание: ${offer.description.text}
          |""".stripMargin
   }
 
   // edit my offer
 
-  case class EditOffer(previous: State) extends State with WithPrevious {
+  case class EditOffer(previous: State, offerId: OfferID) extends State with WithPrevious with WithOfferID {
     val tag: Tag = EditOfferTag
     val next: Seq[Tag] =
       Seq(EditOfferNameTag, EditOfferPriceTag, EditOfferDescriptionTag, AddOfferPhotoTag, DeleteOfferPhotosTag, BackTag)
     val text: String = "Что хотите поменять?"
   }
 
-  case class EditOfferName(previous: State) extends State with WithPrevious {
+  case class EditOfferName(previous: State, offerId: OfferID) extends State with WithPrevious with WithOfferID {
     val tag: Tag = EditOfferNameTag
     val next: Seq[Tag] = Seq(BackTag)
     val text: String = "Введите новое название объявления"
   }
 
-  case class EditOfferPrice(previous: State) extends State with WithPrevious {
+  case class EditOfferPrice(previous: State, offerId: OfferID) extends State with WithPrevious with WithOfferID {
     val tag: Tag = EditOfferPriceTag
     val next: Seq[Tag] = Seq(BackTag)
     val text: String = "Введите новую цену"
   }
 
-  case class EditOfferDescription(previous: State) extends State with WithPrevious {
+  case class EditOfferDescription(previous: State, offerId: OfferID) extends State with WithPrevious with WithOfferID {
     val tag: Tag = EditOfferDescriptionTag
     val next: Seq[Tag] = Seq(BackTag)
     val text: String = "Введите новое описание к объявлению"
   }
 
-  case class AddOfferPhoto(previous: State) extends State with WithPrevious {
+  case class AddOfferPhoto(previous: State, offerId: OfferID) extends State with WithPrevious with WithOfferID {
     val tag: Tag = AddOfferPhotoTag
     val next: Seq[Tag] = Seq(BackTag)
     val text: String = "Загрузите фотографию"
