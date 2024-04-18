@@ -27,7 +27,7 @@ class OfferHandler[F[_]: Applicative](offerService: OfferService[F], override va
 
   private val getOffersByIds: ServerEndpoint[Any, F] =
     endpoint.withApiErrors.post
-      .summary("Get all offers of the specified user")
+      .summary("Get all offers by ids")
       .in("api" / "v1" / "offer" / "list")
       .in(jsonBody[GetOffersRequest])
       .out(jsonBody[OffersResponse])

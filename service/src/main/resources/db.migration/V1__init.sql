@@ -19,6 +19,6 @@ create table users
 
 create table user_offers
 (
-    offer_id uuid primary key,
-    user_id  uuid not null references users(id)
+    offer_id uuid primary key references offers (id),
+    user_id  uuid not null references users (id)
 );

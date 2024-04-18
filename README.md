@@ -46,14 +46,15 @@ create table users
 
 create table user_offers
 (
-    offer_id uuid primary key,
-    user_id  uuid not null references users(id)
+    offer_id uuid primary key references offers (id),
+    user_id  uuid not null references users (id)
 );
 ```
 
 ### Authorization
 
-Each user has login (telegram @login) and password, and, in order to use the service, he should get a session and then attach it to each request
+Each user has login (telegram @login) and password, and, in order to use the service, he should get a session and then
+attach it to each request
 
 Creating a session:
 
