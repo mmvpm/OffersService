@@ -97,10 +97,7 @@ class OfferDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
   private def insertIntoOffers(offer: Offer): ConnectionIO[Boolean] = {
     import offer._
     import description._
-    sql"insert into offers values ($id, $name, $price, $text, $status, $source)"
-      .update
-      .run
-      .map(_ == 1)
+    sql"insert into offers values ($id, $name, $price, $text, $status, $source)".update.run.map(_ == 1)
   }
 
   private def insertIntoUserOffers(offer: Offer): ConnectionIO[Boolean] =
