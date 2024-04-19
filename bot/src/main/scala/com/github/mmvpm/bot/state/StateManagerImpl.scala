@@ -133,7 +133,7 @@ class StateManagerImpl[F[_]: MonadCancelThrow](ofsManager: OfsManager[F]) extend
 
   private def getOffers(maxLength: Int): Seq[Offer] =
     (0 until Random.nextInt(maxLength)).map { index =>
-      Offer(UUID.randomUUID, UUID.randomUUID, OfferDescription("name", 228, "description"), OfferStatus.Active)
+      Offer(UUID.randomUUID, UUID.randomUUID, OfferDescription("name", 228, "description"), OfferStatus.Active, None)
     }
 
   private def toMyOffer(current: State)(implicit message: Message): F[State] = {
