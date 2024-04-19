@@ -67,7 +67,7 @@ class OfferDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
 
   private def selectFromOffers(offerId: OfferID): ConnectionIO[OffersEntry] =
     sql"""
-      select id, uo.user_id, name, price, description, status
+      select id, uo.user_id, name, price, description, status, source
       from offers
       join user_offers uo on offers.id = uo.offer_id
       where id = $offerId
@@ -77,7 +77,7 @@ class OfferDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
 
   private def selectFromOffers(offerIds: NonEmptyList[OfferID]): ConnectionIO[List[OffersEntry]] =
     (fr"""
-      select id, uo.user_id, name, price, description, status
+      select id, uo.user_id, name, price, description, status, source
       from offers
       join user_offers uo on offers.id = uo.offer_id
       where """ ++ in(fr"id", offerIds))
@@ -86,7 +86,7 @@ class OfferDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
 
   private def selectFromOffersByUser(userId: UserID): ConnectionIO[List[OffersEntry]] =
     sql"""
-      select id, uo.user_id, name, price, description, status
+      select id, uo.user_id, name, price, description, status, source
       from offers
       join user_offers uo on offers.id = uo.offer_id
       where uo.user_id = $userId
@@ -97,7 +97,7 @@ class OfferDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
   private def insertIntoOffers(offer: Offer): ConnectionIO[Boolean] = {
     import offer._
     import description._
-    sql"insert into offers values ($id, $name, $price, $text, $status)".update.run.map(_ == 1)
+    sql"insert into offers values ($id, $name, $price, $text, $status, $source)".update.run.map(_ == 1)
   }
 
   private def insertIntoUserOffers(offer: Offer): ConnectionIO[Boolean] =

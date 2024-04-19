@@ -36,7 +36,7 @@ class OfferServiceImpl[F[_]: Monad: UUIDGen](offerDao: OfferDao[F]) extends Offe
   override def createOffer(userId: UserID, request: CreateOfferRequest): EitherT[F, ApiError, OfferResponse] =
     (for {
       offerId <- EitherT.liftF(UUIDGen[F].randomUUID)
-      offer = Offer(offerId, userId, request.description, OfferStatus.Active)
+      offer = Offer(offerId, userId, request.description, OfferStatus.Active, request.source)
       _ <- offerDao.createOffer(offer)
     } yield OfferResponse(offer)).convertError
 

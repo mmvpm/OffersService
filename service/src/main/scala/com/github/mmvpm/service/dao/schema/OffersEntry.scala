@@ -9,11 +9,12 @@ case class OffersEntry(
     name: String,
     price: Int,
     text: String,
-    status: OfferStatus
+    status: OfferStatus,
+    source: Option[String]
 ) {
 
   def toOffer: Offer =
-    Offer(id, userId, OfferDescription(name, price, text), status)
+    Offer(id, userId, OfferDescription(name, price, text), status, source)
 }
 
 object OffersEntry {
@@ -25,6 +26,7 @@ object OffersEntry {
       offer.description.name,
       offer.description.price,
       offer.description.text,
-      offer.status
+      offer.status,
+      offer.source
     )
 }
