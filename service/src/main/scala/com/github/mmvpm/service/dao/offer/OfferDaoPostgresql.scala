@@ -4,9 +4,9 @@ import cats.Monad
 import cats.data.{EitherT, NonEmptyList}
 import cats.effect.kernel.MonadCancelThrow
 import cats.implicits._
-import com.github.mmvpm.model.{Offer, OfferID, Photo, PhotoID, UserID}
+import com.github.mmvpm.model._
 import com.github.mmvpm.service.dao.error._
-import com.github.mmvpm.service.dao.schema.{DoobieSupport, OfferPatch, OffersEntry, PhotosEntry, UserOffersEntry}
+import com.github.mmvpm.service.dao.schema._
 import com.github.mmvpm.util.Logging
 import doobie.ConnectionIO
 import doobie.implicits._
@@ -98,6 +98,24 @@ class OfferDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
         case error         => InternalOfferDaoError(error.getMessage)
       }
 
+  def searchPhrase(query: String, limit: Int): EitherT[F, OfferDaoError, List[OfferID]] =
+    selectFromOffersByPhrase(query, limit)
+      .transact(tr)
+      .attemptT
+      .leftMap(error => InternalOfferDaoError(error.getMessage))
+
+  def searchPlain(query: String, limit: Int): EitherT[F, OfferDaoError, List[OfferID]] =
+    selectFromOffersByPlain(query, limit)
+      .transact(tr)
+      .attemptT
+      .leftMap(error => InternalOfferDaoError(error.getMessage))
+
+  def searchAnyWords(words: Seq[String], limit: Int): EitherT[F, OfferDaoError, List[OfferID]] =
+    selectFromOffersWithAnyWord(words, limit)
+      .transact(tr)
+      .attemptT
+      .leftMap(error => InternalOfferDaoError(error.getMessage))
+
   // internal
 
   private def insertOfferToAllTables(offer: Offer): ConnectionIO[Boolean] =
@@ -118,7 +136,7 @@ class OfferDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
       insertIntoOfferPhotos(offerId, photo.id)
     )(_ && _)
 
-  // queries
+  // queries: offers
 
   private def selectFromOffers(offerId: OfferID): ConnectionIO[OffersEntry] =
     sql"""
@@ -168,7 +186,7 @@ class OfferDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
     (fr"update offers set" ++ sqlByPatch(patch) ++
       fr"from user_offers uo where id = $offerId and uo.user_id = $userId").update.run.map(_ == 1)
 
-  // photos
+  // queries: photos
 
   private def selectFromPhotos(offerId: OfferID): ConnectionIO[List[PhotosEntry]] =
     sql"""
@@ -198,6 +216,38 @@ class OfferDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
       from photos
       where id in (select photo_id from deleted_photo_ids);
        """.update.run
+
+  // queries: search
+
+  private def selectFromOffersByPhrase(phrase: String, limit: Int): ConnectionIO[List[OfferID]] =
+    sql"""
+      select id
+      from offers
+      where to_tsvector('russian', name || ' ' || description) @@ phraseto_tsquery('russian', $phrase)
+      limit $limit
+      """
+      .query[OfferID]
+      .to[List]
+
+  private def selectFromOffersByPlain(plain: String, limit: Int): ConnectionIO[List[OfferID]] =
+    sql"""
+      select id
+      from offers
+      where to_tsvector('russian', name || ' ' || description) @@ plainto_tsquery('russian', $plain)
+      limit $limit
+      """
+      .query[OfferID]
+      .to[List]
+
+  private def selectFromOffersWithAnyWord(words: Seq[String], limit: Int): ConnectionIO[List[OfferID]] =
+    sql"""
+      select id
+      from offers
+      where to_tsvector('russian', name || ' ' || description) @@ to_tsquery('russian', ${words.mkString(" | ")})
+      limit $limit
+      """
+      .query[OfferID]
+      .to[List]
 
   // utils
 

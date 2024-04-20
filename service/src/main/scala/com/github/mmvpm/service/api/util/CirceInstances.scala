@@ -59,5 +59,7 @@ case object CirceInstances {
 
   implicit val codecOffersResponse: Codec[OffersResponse] = deriveCodec
 
+  implicit val codecOfferIdsResponse: Codec[OfferIdsResponse] = deriveCodec
+
   implicit val codecOfferResponse: Codec[OfferResponse] = deriveCodec
 }

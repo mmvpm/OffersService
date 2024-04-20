@@ -2,13 +2,8 @@ package com.github.mmvpm.service.api
 
 import cats.Applicative
 import com.github.mmvpm.model.{OfferID, UserID}
-import com.github.mmvpm.service.api.request.{
-  AddOfferPhotosRequest,
-  CreateOfferRequest,
-  GetOffersRequest,
-  UpdateOfferRequest
-}
-import com.github.mmvpm.service.api.response.{OfferResponse, OffersResponse, OkResponse}
+import com.github.mmvpm.service.api.request._
+import com.github.mmvpm.service.api.response.{OfferIdsResponse, OfferResponse, OffersResponse, OkResponse}
 import com.github.mmvpm.service.api.support.{ApiErrorSupport, AuthSessionSupport}
 import com.github.mmvpm.service.api.util.CirceInstances._
 import com.github.mmvpm.service.api.util.SchemaInstances._
@@ -22,6 +17,17 @@ class OfferHandler[F[_]: Applicative](offerService: OfferService[F], override va
     extends Handler[F]
     with AuthSessionSupport[F]
     with ApiErrorSupport {
+
+  private val search: ServerEndpoint[Any, F] =
+    endpoint.withApiErrors.get
+      .summary("Search by offers")
+      .in("api" / "v1" / "offer" / "search")
+      .in(query[String]("query"))
+      .in(query[Int]("limit").default(30))
+      .out(jsonBody[OfferIdsResponse])
+      .serverLogic { case (query, limit) =>
+        offerService.search(query, limit).value
+      }
 
   private val getOffer: ServerEndpoint[Any, F] =
     endpoint.withApiErrors.get
@@ -96,6 +102,7 @@ class OfferHandler[F[_]: Applicative](offerService: OfferService[F], override va
 
   override def endpoints: List[ServerEndpoint[Any, F]] =
     List(
+      search,
       getOffer,
       getOffersByIds,
       getOffers,

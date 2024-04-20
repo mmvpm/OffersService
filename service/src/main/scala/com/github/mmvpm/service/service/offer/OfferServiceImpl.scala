@@ -1,18 +1,13 @@
 package com.github.mmvpm.service.service.offer
 
-import cats.data.{EitherT, NonEmptyList}
+import cats.data.EitherT
 import cats.effect.std.UUIDGen
 import cats.implicits.{toFunctorOps, toTraverseOps}
 import cats.{Functor, Monad}
 import com.github.mmvpm.model._
 import com.github.mmvpm.service.api.error._
-import com.github.mmvpm.service.api.request.{
-  AddOfferPhotosRequest,
-  CreateOfferRequest,
-  GetOffersRequest,
-  UpdateOfferRequest
-}
-import com.github.mmvpm.service.api.response.{OfferResponse, OffersResponse, OkResponse}
+import com.github.mmvpm.service.api.request._
+import com.github.mmvpm.service.api.response.{OfferIdsResponse, OfferResponse, OffersResponse, OkResponse}
 import com.github.mmvpm.service.dao.error._
 import com.github.mmvpm.service.dao.offer.OfferDao
 import com.github.mmvpm.service.dao.schema.OfferPatch
@@ -76,6 +71,15 @@ class OfferServiceImpl[F[_]: Monad: UUIDGen](offerDao: OfferDao[F]) extends Offe
       .deleteAllPhotos(userId, offerId)
       .as(OkResponse())
       .convertError
+
+  def search(query: String, limit: Int): EitherT[F, ApiError, OfferIdsResponse] =
+    (for {
+      // TODO: should be optimized
+      resultsPhrase <- offerDao.searchPhrase(query, limit)
+      resultsPlain <- offerDao.searchPlain(query, limit)
+      resultsAnyWords <- offerDao.searchAnyWords(query.split(' '), limit)
+      results = (resultsPhrase ++ resultsPlain ++ resultsAnyWords).distinct.take(limit)
+    } yield OfferIdsResponse(results)).convertError
 
   // internal
 
