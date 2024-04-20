@@ -72,4 +72,7 @@ object SchemaInstances {
 
   implicit val schemaOffersResponse: Schema[OffersResponse] =
     Schema.derived.description("List of offers")
+
+  implicit val schemaOfferIdsResponse: Schema[OfferIdsResponse] =
+    Schema.derived.description("List of offer IDs")
 }
