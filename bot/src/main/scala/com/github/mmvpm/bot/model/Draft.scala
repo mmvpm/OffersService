@@ -6,7 +6,7 @@ case class Draft(
     name: Option[String] = None,
     price: Option[Int] = None,
     description: Option[String] = None,
-    photos: Seq[String] = Seq.empty
+    photos: Seq[TgPhoto] = Seq.empty
 ) {
 
   def toOfferDescription: Option[OfferDescription] =

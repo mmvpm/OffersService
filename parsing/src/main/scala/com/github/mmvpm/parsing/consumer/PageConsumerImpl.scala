@@ -31,19 +31,26 @@ class PageConsumerImpl[F[_]: Temporal](
   private def one: EitherT[F, String, Unit] =
     for {
       page <- pageQueueReader.getNextBlocking
-      visited <- pageVisitedDao.isVisited(page)
+      visited <- pageVisitedDao.isVisited(page).recover { error =>
+        log.error(s"get visited failed: $error")
+        false
+      }
       _ = log.info(s"page ${page.url.toString.split('/').last} is already visited: $visited")
       _ <- if (!visited) handlePage(page) else EitherT.pure[F, String](())
     } yield ()
 
   private def handlePage(page: Page): EitherT[F, String, Unit] =
     for {
-      _ <- pageVisitedDao.markVisited(page)
+      _ <- pageVisitedDao.markVisited(page).recover { error =>
+        log.error(s"mark visited failed: $error")
+      }
       youlaItems <- pageParser.parse(page).recover { error =>
         log.warn(s"handle page ${page.url} failed: $error")
         List.empty
       }
-      _ <- youlaItems.map(handleItem).sequence.leftMap(_.details)
+      _ <- youlaItems.map(handleItem).sequence.void.leftMap(_.details).recover { error =>
+        log.error(s"handle item failed: $error")
+      }
       _ <- makeDelay
     } yield ()
 

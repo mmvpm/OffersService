@@ -3,6 +3,7 @@ package com.github.mmvpm.bot
 import cats.effect.std.Random
 import cats.effect.{IO, IOApp}
 import com.github.mmvpm.bot.client.ofs.{OfsClient, OfsClientSttp}
+import com.github.mmvpm.bot.client.telegram.{TelegramClient, TelegramClientSttp}
 import com.github.mmvpm.bot.manager.ofs.{OfsManager, OfsManagerImpl}
 import com.github.mmvpm.bot.model.MessageID
 import com.github.mmvpm.bot.render.{Renderer, RendererImpl}
@@ -29,13 +30,23 @@ object Main extends IOApp.Simple {
       sessionStorage = new StorageImpl[Option[Session]](None)
       lastMessageStorage = new StorageImpl[Option[MessageID]](None)
 
+      telegramClient: TelegramClient[IO] = new TelegramClientSttp[IO](token, sttpBackend)
       ofsClient: OfsClient[IO] = new OfsClientSttp[IO](config.ofs, sttpBackend)
       ofsManager: OfsManager[IO] = new OfsManagerImpl[IO](ofsClient, sessionStorage, random)
 
       renderer: Renderer = new RendererImpl
       manager: StateManager[IO] = new StateManagerImpl[IO](ofsManager)
 
-      bot = new OfferServiceBot[IO](token, sttpBackend, renderer, manager, stateStorage, lastMessageStorage, ofsManager)
+      bot = new OfferServiceBot[IO](
+        token,
+        sttpBackend,
+        renderer,
+        manager,
+        stateStorage,
+        lastMessageStorage,
+        ofsManager,
+        telegramClient
+      )
 
       _ <- bot.startPolling()
     } yield ()

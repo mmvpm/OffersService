@@ -61,7 +61,9 @@ class OfferServiceImpl[F[_]: Monad: UUIDGen](offerDao: OfferDao[F]) extends Offe
 
   def addPhotos(userId: UserID, offerId: OfferID, request: AddOfferPhotosRequest): EitherT[F, ApiError, OfferResponse] =
     (for {
-      photos <- EitherT.liftF(request.photoUrls.traverse(createPhoto))
+      photosU <- EitherT.liftF(request.photoUrls.traverse(createPhoto))
+      photosT <- EitherT.liftF(request.telegramIds.traverse(createPhoto))
+      photos = photosU ++ photosT
       _ <- offerDao.addPhotos(userId, offerId, photos)
       offer <- offerDao.getOffer(offerId)
     } yield OfferResponse(offer)).convertError
@@ -86,7 +88,13 @@ class OfferServiceImpl[F[_]: Monad: UUIDGen](offerDao: OfferDao[F]) extends Offe
   private def createPhoto(url: URL): F[Photo] =
     for {
       id <- UUIDGen[F].randomUUID
-      photo = Photo(id, Some(url), None)
+      photo = Photo(id, Some(url), None, None)
+    } yield photo
+
+  private def createPhoto(telegramId: String): F[Photo] =
+    for {
+      id <- UUIDGen[F].randomUUID
+      photo = Photo(id, None, None, Some(telegramId))
     } yield photo
 }
 
