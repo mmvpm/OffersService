@@ -62,8 +62,9 @@ class PageConsumerImpl[F[_]: Temporal](
           log.error(s"ofs sign-up for ${item.user} failed: $details")
           ()
       }
-      signInResponse <- ofsClient.signIn(login, password)
-      _ <- ofsClient.createOffer(signInResponse.session, offer)
+      session <- ofsClient.signIn(login, password).map(_.session)
+      createdOffer <- ofsClient.createOffer(session, offer, item.offer.source).map(_.offer)
+      _ <- ofsClient.addPhotos(session, createdOffer.id, item.offer.photoUrls)
     } yield ()
   }
 

@@ -3,15 +3,18 @@ package com.github.mmvpm.parsing.parser.response
 import com.github.mmvpm.parsing.model.{YoulaOffer, YoulaUser}
 import com.github.mmvpm.parsing.util.StringUtils.StringSyntax
 
+import java.net.URL
+
 case class YoulaState(entities: Entities) {
 
-  def toYoulaOffers: List[YoulaOffer] =
+  def toYoulaOffers(source: URL): List[YoulaOffer] =
     entities.products.map { product =>
       YoulaOffer(
         product.name,
         (product.price / 100).toInt, // source price in kopecks
         product.description,
-        product.images.flatMap(_.url.toURLOption)
+        product.images.flatMap(_.url.toURLOption),
+        source
       )
     }
 

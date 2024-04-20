@@ -10,6 +10,8 @@ import io.circe.generic.auto._
 import io.circe.parser._
 import net.ruippeixotog.scalascraper.browser.Browser
 
+import java.net.URL
+
 class PageParserJsoup[F[_]: Monad: Sync](browser: Browser) extends PageParser[F] {
 
   import browser.DocumentType
@@ -18,7 +20,7 @@ class PageParserJsoup[F[_]: Monad: Sync](browser: Browser) extends PageParser[F]
     for {
       document <- requestDocument(page)
       json <- getJsonState(document)
-      offers <- parseYoulaOffers(json)
+      offers <- parseYoulaOffers(json, page.url)
     } yield offers
 
   private def requestDocument(page: Page): EitherT[F, String, DocumentType] =
@@ -37,10 +39,10 @@ class PageParserJsoup[F[_]: Monad: Sync](browser: Browser) extends PageParser[F]
       line.contains("window.__YOULA_STATE__ = ")
     }
 
-  private def parseYoulaOffers(json: String): EitherT[F, String, List[YoulaItem]] =
+  private def parseYoulaOffers(json: String, source: URL): EitherT[F, String, List[YoulaItem]] =
     for {
       state <- EitherT.fromEither[F](decode[YoulaState](json)).leftMap(_.getMessage)
-      offers = state.toYoulaOffers
+      offers = state.toYoulaOffers(source)
       users = state.toYoulaUsers
       items = offers.zip(users).map((YoulaItem.apply _).tupled)
     } yield items

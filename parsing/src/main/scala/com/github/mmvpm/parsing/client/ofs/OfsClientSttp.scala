@@ -3,7 +3,7 @@ package com.github.mmvpm.parsing.client.ofs
 import cats.data.EitherT
 import cats.MonadThrow
 import cats.implicits.{toBifunctorOps, toFunctorOps}
-import com.github.mmvpm.model.{OfferDescription, Session}
+import com.github.mmvpm.model.{OfferDescription, OfferID, Session}
 import com.github.mmvpm.parsing.OfsConfig
 import com.github.mmvpm.parsing.client.ofs.request._
 import com.github.mmvpm.parsing.client.ofs.response._
@@ -13,6 +13,8 @@ import io.circe.generic.auto._
 import io.circe.Error
 import sttp.client3._
 import sttp.client3.circe._
+
+import java.net.URL
 
 class OfsClientSttp[F[_]: MonadThrow](ofsConfig: OfsConfig, sttpBackend: SttpBackend[F, Any])
     extends OfsClient[F] {
@@ -49,16 +51,33 @@ class OfsClientSttp[F[_]: MonadThrow](ofsConfig: OfsConfig, sttpBackend: SttpBac
 
   override def createOffer(
       session: Session,
-      description: OfferDescription
-  ): EitherT[F, OfsError, CreateOfferResponse] = {
+      description: OfferDescription,
+      source: URL
+  ): EitherT[F, OfsError, OfferResponse] = {
     val requestUri = uri"${ofsConfig.baseUrl}/api/v1/offer"
-    val request = CreateOfferRequest(description)
+    val request = CreateOfferRequest(description, Some(source.toString))
 
     val response = basicRequest
       .post(requestUri)
       .body(request)
       .header(SessionHeaderName, session.toString)
-      .response(asJsonEither[OfsApiError, CreateOfferResponse])
+      .response(asJsonEither[OfsApiError, OfferResponse])
+      .readTimeout(ofsConfig.requestTimeout)
+      .send(sttpBackend)
+      .map(_.body.leftMap(parseFailure))
+
+    EitherT(response)
+  }
+
+  def addPhotos(session: Session, offerId: OfferID, photoUrls: Seq[URL]): EitherT[F, OfsError, OfferResponse] = {
+    val requestUri = uri"${ofsConfig.baseUrl}/api/v1/offer/$offerId/photo"
+    val request = AddOfferPhotosRequest(photoUrls.map(_.toString))
+
+    val response = basicRequest
+      .put(requestUri)
+      .body(request)
+      .header(SessionHeaderName, session.toString)
+      .response(asJsonEither[OfsApiError, OfferResponse])
       .readTimeout(ofsConfig.requestTimeout)
       .send(sttpBackend)
       .map(_.body.leftMap(parseFailure))
