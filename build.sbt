@@ -153,8 +153,22 @@ lazy val bot = (project in file("bot"))
     ).flatten
   )
 
+lazy val parsing = (project in file("parsing"))
+  .dependsOn(common)
+  .settings(
+    name := "parsing",
+    libraryDependencies ++= Seq(
+      circe,
+      pureconfig,
+      redis,
+      sttpClient,
+      catsRetry,
+      scrapper
+    ).flatten
+  )
+
 lazy val root = (project in file("."))
   .settings(
     name := "OffersService"
   )
-  .aggregate(common, service, bot)
+  .aggregate(common, service, bot, parsing)
