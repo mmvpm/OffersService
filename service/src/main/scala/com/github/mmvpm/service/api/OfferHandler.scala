@@ -2,12 +2,7 @@ package com.github.mmvpm.service.api
 
 import cats.Applicative
 import com.github.mmvpm.model.{OfferID, UserID}
-import com.github.mmvpm.service.api.request.{
-  AddOfferPhotosRequest,
-  CreateOfferRequest,
-  GetOffersRequest,
-  UpdateOfferRequest
-}
+import com.github.mmvpm.service.api.request._
 import com.github.mmvpm.service.api.response.{OfferIdsResponse, OfferResponse, OffersResponse, OkResponse}
 import com.github.mmvpm.service.api.support.{ApiErrorSupport, AuthSessionSupport}
 import com.github.mmvpm.service.api.util.CirceInstances._
