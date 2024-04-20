@@ -7,7 +7,14 @@ import com.github.mmvpm.service.api.request._
 import com.github.mmvpm.service.api.response._
 import sttp.tapir.Schema
 
+import java.net.URL
+
 object SchemaInstances {
+
+  // common
+
+  implicit val schemaURL: Schema[URL] =
+    Schema.string.description("url").encodedExample("https://ya.ru")
 
   // model
 
@@ -16,6 +23,9 @@ object SchemaInstances {
 
   implicit val schemaOfferDescription: Schema[OfferDescription] =
     Schema.derived.description("User-defined offer fields")
+
+  implicit val schemaPhoto: Schema[Photo] =
+    Schema.derived.description("Photo")
 
   implicit val schemaOffer: Schema[Offer] =
     Schema.derived.description("Offer")
@@ -39,6 +49,9 @@ object SchemaInstances {
 
   implicit val schemaGetOffersRequest: Schema[GetOffersRequest] =
     Schema.derived.description("Request to get offers by their ids")
+
+  implicit val schemaAddOfferPhotosRequest: Schema[AddOfferPhotosRequest] =
+    Schema.derived.description("Request to add photos to the offer")
 
   // responses
 

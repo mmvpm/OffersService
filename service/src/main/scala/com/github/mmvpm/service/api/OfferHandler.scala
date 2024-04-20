@@ -2,7 +2,12 @@ package com.github.mmvpm.service.api
 
 import cats.Applicative
 import com.github.mmvpm.model.{OfferID, UserID}
-import com.github.mmvpm.service.api.request.{CreateOfferRequest, GetOffersRequest, UpdateOfferRequest}
+import com.github.mmvpm.service.api.request.{
+  AddOfferPhotosRequest,
+  CreateOfferRequest,
+  GetOffersRequest,
+  UpdateOfferRequest
+}
 import com.github.mmvpm.service.api.response.{OfferResponse, OffersResponse, OkResponse}
 import com.github.mmvpm.service.api.support.{ApiErrorSupport, AuthSessionSupport}
 import com.github.mmvpm.service.api.util.CirceInstances._
@@ -72,8 +77,35 @@ class OfferHandler[F[_]: Applicative](offerService: OfferService[F], override va
       .out(jsonBody[OkResponse])
       .serverLogic(userId => offerId => offerService.deleteOffer(userId, offerId).value)
 
+  private val addOfferPhotos: ServerEndpoint[Any, F] =
+    endpoint.withApiErrors.withSession.put
+      .summary("Add photos to the offer")
+      .in("api" / "v1" / "offer" / path[OfferID]("offer-id") / "photo")
+      .in(jsonBody[AddOfferPhotosRequest])
+      .out(jsonBody[OfferResponse])
+      .serverLogic(userId => { case (offerId, request) =>
+        offerService.addPhotos(userId, offerId, request).value
+      })
+
+  private val deleteAllOfferPhotos: ServerEndpoint[Any, F] =
+    endpoint.withApiErrors.withSession.delete
+      .summary("Delete all photos from the offer")
+      .in("api" / "v1" / "offer" / path[OfferID]("offer-id") / "photo" / "all")
+      .out(jsonBody[OkResponse])
+      .serverLogic(userId => offerId => offerService.deleteAllPhotos(userId, offerId).value)
+
   override def endpoints: List[ServerEndpoint[Any, F]] =
-    List(getOffer, getOffersByIds, getOffers, getMyOffers, createOffer, updateOffer, deleteOffer).map(
+    List(
+      getOffer,
+      getOffersByIds,
+      getOffers,
+      getMyOffers,
+      createOffer,
+      updateOffer,
+      deleteOffer,
+      addOfferPhotos,
+      deleteAllOfferPhotos
+    ).map(
       _.withTag("offer")
     )
 }

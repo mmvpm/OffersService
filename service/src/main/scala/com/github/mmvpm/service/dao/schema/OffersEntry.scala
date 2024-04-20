@@ -13,8 +13,8 @@ case class OffersEntry(
     source: Option[String]
 ) {
 
-  def toOffer: Offer =
-    Offer(id, userId, OfferDescription(name, price, text), status, source)
+  def toOffer(photosEntries: Seq[PhotosEntry]): Offer =
+    Offer(id, userId, OfferDescription(name, price, text), status, source, photosEntries.map(_.toPhoto))
 }
 
 object OffersEntry {
