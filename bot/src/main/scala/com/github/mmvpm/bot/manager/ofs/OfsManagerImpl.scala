@@ -7,13 +7,13 @@ import cats.{Functor, Monad}
 import com.bot4s.telegram.models.Message
 import com.github.mmvpm.bot.client.ofs.{OfsClient, error}
 import com.github.mmvpm.bot.client.ofs.error.{OfsApiClientError, OfsClientError}
-import com.github.mmvpm.bot.client.ofs.response.UserIdResponse
+import com.github.mmvpm.bot.client.ofs.response.{OfsOffer, UserIdResponse}
 import com.github.mmvpm.bot.manager.ofs.OfsManagerImpl._
 import com.github.mmvpm.bot.manager.ofs.error.OfsError
 import com.github.mmvpm.bot.manager.ofs.error.OfsError._
 import com.github.mmvpm.bot.manager.ofs.response.LoginOrRegisterResponse
 import com.github.mmvpm.bot.manager.ofs.response.LoginOrRegisterResponse._
-import com.github.mmvpm.bot.model.{Draft, OfferPatch}
+import com.github.mmvpm.bot.model.{Draft, OfferPatch, TgPhoto}
 import com.github.mmvpm.bot.state.Storage
 import com.github.mmvpm.model.{Offer, OfferDescription, OfferID, OfferStatus, Session}
 import sttp.model.StatusCode
@@ -36,6 +36,12 @@ class OfsManagerImpl[F[_]: Monad](ofsClient: OfsClient[F], sessionStorage: Stora
       case Some(session) => checkSession(session).as(LoggedIn(getName))
     }
 
+  def search(query: String): EitherT[F, OfsError, List[Offer]] =
+    (for {
+      offerIds <- ofsClient.search(query).map(_.offerIds)
+      offers <- ofsClient.getOffers(offerIds).map(_.offers)
+    } yield offers).handleDefaultErrors
+
   def getOffer(offerId: OfferID): EitherT[F, OfsError, Option[Offer]] =
     ofsClient
       .getOffer(offerId)
@@ -57,7 +63,7 @@ class OfsManagerImpl[F[_]: Monad](ofsClient: OfsClient[F], sessionStorage: Stora
       case Some(session) => getMyOffers(session)
     }
 
-  def createOffer(description: OfferDescription)(implicit message: Message): EitherT[F, OfsError, Unit] =
+  def createOffer(description: OfferDescription)(implicit message: Message): EitherT[F, OfsError, OfsOffer] =
     sessionStorage.get match {
       case None          => EitherT.leftT(InvalidSession)
       case Some(session) => createOffer(session, description)
@@ -73,6 +79,18 @@ class OfsManagerImpl[F[_]: Monad](ofsClient: OfsClient[F], sessionStorage: Stora
     sessionStorage.get match {
       case None          => EitherT.leftT(InvalidSession)
       case Some(session) => deleteOffer(session, offerId)
+    }
+
+  def addOfferPhotos(offerId: OfferID, photos: Seq[TgPhoto])(implicit message: Message): EitherT[F, OfsError, Unit] =
+    sessionStorage.get match {
+      case None => EitherT.leftT(InvalidSession)
+      case Some(session) => addOfferPhotos(session, offerId, photos)
+    }
+
+  def deleteAllPhotos(offerId: OfferID)(implicit message: Message): EitherT[F, OfsError, Unit] =
+    sessionStorage.get match {
+      case None          => EitherT.leftT(InvalidSession)
+      case Some(session) => deleteAllPhotos(session, offerId)
     }
 
   // internal
@@ -115,15 +133,27 @@ class OfsManagerImpl[F[_]: Monad](ofsClient: OfsClient[F], sessionStorage: Stora
       .map(_.offers.filter(_.status == OfferStatus.Active))
       .handleDefaultErrors
 
-  private def createOffer(session: Session, description: OfferDescription): EitherT[F, OfsError, Unit] =
+  private def createOffer(session: Session, description: OfferDescription): EitherT[F, OfsError, OfsOffer] =
     ofsClient
       .createOffer(session, description)
-      .void
+      .map(_.offer)
       .handleDefaultErrors
 
   private def deleteOffer(session: Session, offerId: OfferID): EitherT[F, OfsError, Unit] =
     ofsClient
       .deleteOffer(session, offerId)
+      .void
+      .handleDefaultErrors
+
+  private def addOfferPhotos(session: Session, offerId: OfferID, photos: Seq[TgPhoto]): EitherT[F, OfsError, Unit] =
+    ofsClient
+      .addPhotos(session, offerId, photos)
+      .void
+      .handleDefaultErrors
+
+  private def deleteAllPhotos(session: Session, offerId: OfferID): EitherT[F, OfsError, Unit] =
+    ofsClient
+      .deleteAllPhotos(session, offerId)
       .void
       .handleDefaultErrors
 

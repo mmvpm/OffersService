@@ -1,19 +1,21 @@
 package com.github.mmvpm.bot
 
 import cats.effect.Concurrent
-import cats.implicits.toFlatMapOps
+import cats.implicits.{catsSyntaxApplicativeError, catsSyntaxApplicativeId, toFlatMapOps}
 import cats.syntax.functor._
 import com.bot4s.telegram.api.declarative.{Callbacks, Command, Commands}
 import com.bot4s.telegram.cats.{Polling, TelegramBot}
-import com.bot4s.telegram.methods.{EditMessageText, SendDice, SendMessage}
+import com.bot4s.telegram.methods.{JsonRequest, MultipartRequest, Request, SendDice}
 import com.bot4s.telegram.models._
+import com.github.mmvpm.bot.client.telegram.TelegramClient
+import com.github.mmvpm.bot.client.telegram.request.SendMediaGroup
 import com.github.mmvpm.bot.manager.ofs.OfsManager
 import com.github.mmvpm.bot.manager.ofs.error.OfsError.InvalidSession
 import com.github.mmvpm.bot.manager.ofs.response.LoginOrRegisterResponse
 import com.github.mmvpm.bot.model.MessageID
 import com.github.mmvpm.bot.render.Renderer
-import com.github.mmvpm.bot.state.{State, StateManager, Storage}
 import com.github.mmvpm.bot.state.State._
+import com.github.mmvpm.bot.state.{State, StateManager, Storage}
 import sttp.client3.SttpBackend
 
 class OfferServiceBot[F[_]: Concurrent](
@@ -23,7 +25,8 @@ class OfferServiceBot[F[_]: Concurrent](
     stateManager: StateManager[F],
     stateStorage: Storage[State],
     lastMessageStorage: Storage[Option[MessageID]],
-    ofsManager: OfsManager[F]
+    ofsManager: OfsManager[F],
+    telegramClient: TelegramClient[F]
 ) extends TelegramBot[F](token, sttpBackend)
     with Polling[F]
     with Commands[F]
@@ -31,7 +34,7 @@ class OfferServiceBot[F[_]: Concurrent](
 
   // user sent a message (text, image, etc) to the chat
   onMessage { implicit message =>
-    command(message) match {
+    (command(message) match {
       case Some(Command("roll", _))  => roll
       case Some(Command("start", _)) => start
       case Some(_)                   => fail
@@ -40,12 +43,16 @@ class OfferServiceBot[F[_]: Concurrent](
           case UnknownTag => fail
           case nextTag    => replyResolved(nextTag)
         }
+    }).recover { error =>
+      logger.error("Bot failed on message", error)
     }
   }
 
   // user pressed the button
   onCallbackQuery { implicit cq =>
-    replyResolved(cq.data.get)(cq.message.get)
+    replyResolved(cq.data.get)(cq.message.get).recover { error =>
+      logger.error("Bot failed on callback query", error)
+    }
   }
 
   // scenarios
@@ -74,8 +81,10 @@ class OfferServiceBot[F[_]: Concurrent](
     for {
       nextState <- stateManager.getNextState(tag, stateStorage.get)
       _ = stateStorage.set(withoutError(nextState))
+      optPhotosReply = renderer.renderPhotos(nextState)
       reply = renderer.render(nextState, lastMessageStorage.get)
-      _ <- requestLogged(reply)
+      _ <- optPhotosReply.map(requestLogged(_)).getOrElse(().pure)
+      _ <- requestLogged(reply, saveMessageId = optPhotosReply.isEmpty)
     } yield ()
 
   private def fail(implicit message: Message): F[Unit] =
@@ -89,18 +98,26 @@ class OfferServiceBot[F[_]: Concurrent](
       case _                  => state
     }
 
-  private def requestLogged(req: Either[EditMessageText, SendMessage], saveMessageId: Boolean = true): F[Unit] =
-    req match {
-      case Left(toEdit) =>
-        for {
-          sent <- request(toEdit)
-          _ = println(s"Edit $sent")
-        } yield ()
-      case Right(toSend) =>
-        for {
-          sent <- request(toSend)
-          _ = if (saveMessageId) lastMessageStorage.set(Some(sent.messageId))(sent)
-          _ = println(s"Sent $sent")
-        } yield ()
+  private def requestLogged(req: Request[?], saveMessageId: Boolean = true): F[Unit] =
+    (req match {
+      case my: SendMediaGroup =>
+        telegramClient.sendMediaGroup(my)
+      case _ =>
+        request(req)
+    }).map {
+      case edited: Either[Boolean, Message] =>
+        println(s"Edit $edited")
+      case sent: Message =>
+        if (saveMessageId) {
+          lastMessageStorage.set(Some(sent.messageId))(sent)
+        }
+        println(s"Sent $sent")
+      case messages: Array[Message] =>
+//        if (messages.nonEmpty && saveMessageId) {
+//          lastMessageStorage.set(Some(messages.head.messageId))(messages.head)
+//        }
+        println(s"Array ${messages.mkString("\n")}")
+      case any =>
+        println(s"Any $any")
     }
 }

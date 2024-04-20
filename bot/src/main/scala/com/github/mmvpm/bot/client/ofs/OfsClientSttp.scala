@@ -10,7 +10,7 @@ import com.github.mmvpm.bot.client.ofs.response._
 import com.github.mmvpm.bot.client.ofs.error._
 import io.circe.generic.auto._
 import com.github.mmvpm.bot.client.ofs.util.CirceInstances._
-import com.github.mmvpm.bot.model.{Draft, OfferPatch}
+import com.github.mmvpm.bot.model.{OfferPatch, TgPhoto}
 import io.circe.Error
 import sttp.client3._
 import sttp.client3.circe._
@@ -55,6 +55,20 @@ class OfsClientSttp[F[_]: MonadThrow](ofsConfig: OfsConfig, sttpBackend: SttpBac
     val response = basicRequest
       .get(requestUri)
       .response(asJsonEither[OfsApiClientError, UserIdResponse])
+      .readTimeout(ofsConfig.requestTimeout)
+      .send(sttpBackend)
+      .map(_.body.leftMap(parseFailure))
+      .recover(error => Left(OfsUnknownClientError(error.getMessage)))
+
+    EitherT(response)
+  }
+
+  def search(query: String): EitherT[F, OfsClientError, OfferIdsResponse] = {
+    val requestUri = uri"${ofsConfig.baseUrl}/api/v1/offer/search?query=$query"
+
+    val response = basicRequest
+      .get(requestUri)
+      .response(asJsonEither[OfsApiClientError, OfferIdsResponse])
       .readTimeout(ofsConfig.requestTimeout)
       .send(sttpBackend)
       .map(_.body.leftMap(parseFailure))
@@ -112,7 +126,7 @@ class OfsClientSttp[F[_]: MonadThrow](ofsConfig: OfsConfig, sttpBackend: SttpBac
       description: OfferDescription
   ): EitherT[F, OfsClientError, CreateOfferResponse] = {
     val requestUri = uri"${ofsConfig.baseUrl}/api/v1/offer"
-    val request = CreateOfferRequest(description)
+    val request = CreateOfferRequest(description, source = None)
 
     val response = basicRequest
       .post(requestUri)
@@ -145,6 +159,41 @@ class OfsClientSttp[F[_]: MonadThrow](ofsConfig: OfsConfig, sttpBackend: SttpBac
 
   def deleteOffer(session: Session, offerId: OfferID): EitherT[F, OfsClientError, OkResponse] = {
     val requestUri = uri"${ofsConfig.baseUrl}/api/v1/offer/$offerId"
+
+    val response = basicRequest
+      .delete(requestUri)
+      .header(SessionHeaderName, session.toString)
+      .response(asJsonEither[OfsApiClientError, OkResponse])
+      .readTimeout(ofsConfig.requestTimeout)
+      .send(sttpBackend)
+      .map(_.body.leftMap(parseFailure))
+      .recover(error => Left(OfsUnknownClientError(error.getMessage)))
+
+    EitherT(response)
+  }
+
+  def addPhotos(session: Session, offerId: OfferID, photos: Seq[TgPhoto]): EitherT[F, OfsClientError, OfferResponse] = {
+    val requestUri = uri"${ofsConfig.baseUrl}/api/v1/offer/$offerId/photo"
+    val request = AddOfferPhotosRequest(
+      photos.collect { case TgPhoto(Some(url), _) => url.toString },
+      photos.collect { case TgPhoto(_, Some(telegramId)) => telegramId }
+    )
+
+    val response = basicRequest
+      .put(requestUri)
+      .body(request)
+      .header(SessionHeaderName, session.toString)
+      .response(asJsonEither[OfsApiClientError, OfferResponse])
+      .readTimeout(ofsConfig.requestTimeout)
+      .send(sttpBackend)
+      .map(_.body.leftMap(parseFailure))
+      .recover(error => Left(OfsUnknownClientError(error.getMessage)))
+
+    EitherT(response)
+  }
+
+  def deleteAllPhotos(session: Session, offerId: OfferID): EitherT[F, OfsClientError, OkResponse] = {
+    val requestUri = uri"${ofsConfig.baseUrl}/api/v1/offer/$offerId/photo/all"
 
     val response = basicRequest
       .delete(requestUri)

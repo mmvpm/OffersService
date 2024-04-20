@@ -190,7 +190,7 @@ class OfferDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
 
   private def selectFromPhotos(offerId: OfferID): ConnectionIO[List[PhotosEntry]] =
     sql"""
-      select id, url, blob
+      select id, url, blob, telegram_id
       from photos
       join offer_photos op on photos.id = op.photo_id
       where offer_id = $offerId
@@ -198,8 +198,10 @@ class OfferDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
       .query[PhotosEntry]
       .to[List]
 
-  private def insertIntoPhotos(photo: Photo): ConnectionIO[Boolean] =
-    sql"insert into photos values (${photo.id}, ${photo.url}, ${photo.blob})".update.run.map(_ == 1)
+  private def insertIntoPhotos(photo: Photo): ConnectionIO[Boolean] = {
+    import photo._
+    sql"insert into photos values ($id, $url, $blob, $telegramId)".update.run.map(_ == 1)
+  }
 
   private def insertIntoOfferPhotos(offerId: OfferID, photoId: PhotoID): ConnectionIO[Boolean] =
     sql"insert into offer_photos values ($photoId, $offerId)".update.run.map(_ == 1)

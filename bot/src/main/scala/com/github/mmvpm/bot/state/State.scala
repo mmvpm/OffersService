@@ -1,7 +1,10 @@
 package com.github.mmvpm.bot.state
 
-import com.github.mmvpm.bot.model.{Button, Draft, Tag}
+import com.github.mmvpm.bot.model.{Button, Draft, Tag, TgPhoto}
+import com.github.mmvpm.bot.state.State.Listing.StepSize
 import com.github.mmvpm.model.{Offer, OfferID}
+
+import scala.util.matching.Regex
 
 sealed trait State {
   def tag: Tag
@@ -40,13 +43,15 @@ object State {
   val ErrorTag: Tag = "error"
   val UnknownTag: Tag = "unknown"
 
-  def buttonBy(tag: Tag): Button =
+  def buttonBy(tag: Tag, state: State): Button =
     tag match {
       case SearchTag               => "Найти товар"
       case ListingTag              => "На следующую страницу"
+//      case Listing.chooseOne(idx)  => state.asInstanceOf[Listing].get(idx.toInt).description.name
       case CreateOfferNameTag      => "Разместить объявление"
       case CreatedOfferTag         => "Опубликовать объявление"
       case MyOffersTag             => "Посмотреть мои объявления"
+//      case MyOffers.chooseOne(idx) => state.asInstanceOf[MyOffers].get(idx.toInt).description.name
       case EditOfferTag            => "Изменить это объявление"
       case EditOfferNameTag        => "Название"
       case EditOfferPriceTag       => "Цену"
@@ -92,6 +97,12 @@ object State {
     def offerId: OfferID
   }
 
+  // photos
+
+  trait WithPhotos {
+    def photos: Seq[TgPhoto]
+  }
+
   // sign-in & sign-up
 
   case class Registered(password: String) extends State with NoPrevious {
@@ -130,49 +141,76 @@ object State {
   case class Search(previous: State) extends State with WithPrevious {
     val tag: Tag = SearchTag
     val next: Seq[Tag] = Seq(BackTag)
-    val text: String = "Что хотите найти?"
+    val text: String = "Введите поисковый запрос"
   }
 
-  case class Listing(previous: State, offers: Seq[Offer], from: Int) extends State with WithPrevious {
+  case class Listing(previous: State, offers: Seq[Offer], from: Int) extends State with WithPrevious with WithPhotos {
 
     val tag: Tag = ListingTag
 
-    val next: Seq[Tag] = nextPageTag ++ Seq(BackTag, StartedTag)
+    val next: Seq[Tag] = nextPageTag /*++ offersTags*/ ++ Seq(BackTag, StartedTag)
 
     val text: String =
-      s"""
-        |Вот что нашлось по вашему запросу:
-        |
-        |${offers.slice(from, from + Listing.StepSize).mkString("- ", "\n- ", "")}
-        |
-        |Если хотите посмотреть одно подробнее, напишите мне его id
-        |""".stripMargin
+      if (offers.nonEmpty)
+        s"""
+          |$summary
+          |
+          |Если хотите посмотреть одно объявление подробнее, напишите мне его ID
+          |""".stripMargin
+      else
+        "По вашему запросу ничего не нашлось :("
+
+    val photos: Seq[TgPhoto] =
+      offers
+        .slice(from, from + Listing.StepSize)
+        .map(offer => TgPhoto.first(offer.photos))
+
+//    def get(idx: Int): Offer =
+//      offers.drop(idx).head
 
     private lazy val nextPageTag =
       if (from + Listing.StepSize < offers.length)
         Seq(ListingTag)
       else
         Seq()
+
+//    private lazy val offersTags: Seq[Button] =
+//      (0 until StepSize).map(idx => s"$ListingTag-${from + idx}")
+
+    private lazy val summary: String =
+      offers
+        .slice(from, from + Listing.StepSize)
+        .map(offer => s"- ${offer.description.name} (${offer.description.price} рублей)\n   ID: ${offer.id}")
+        .mkString("\n\n")
   }
 
   object Listing {
 
     val StepSize = 5
 
+//    val chooseOne: Regex = s"$ListingTag-(\\d*)".r
+
     def start(previous: State, offers: Seq[Offer]): Listing =
       Listing(previous: State, offers: Seq[Offer], from = 0)
   }
 
-  case class OneOffer(previous: State, offer: Offer) extends State with WithPrevious {
+  case class OneOffer(previous: State, offer: Offer) extends State with WithPrevious with WithPhotos {
     val tag: Tag = OneOfferTag
     val next: Seq[Tag] = Seq(BackTag)
+
     val text: String =
       s"""
-        |Выбранное объявление:
+        |${offer.description.name}
         |
-        |- id: ${offer.id}
-        |- data: ${offer.description}
+        |Цена: ${offer.description.price} рублей
+        |
+        |${offer.description.text}
+        |
+        |Источник: ${offer.source.getOrElse("Размещено через telegram-bot")}
         |""".stripMargin
+
+    val photos: Seq[TgPhoto] =
+      offer.photos.take(10).map(TgPhoto.from)
   }
 
   // create offer
@@ -186,7 +224,7 @@ object State {
   case class CreateOfferPrice(previous: State, draft: Draft) extends State with WithPrevious {
     val tag: Tag = CreateOfferPriceTag
     val next: Seq[Tag] = Seq(BackTag)
-    val text: String = "Введите цену, за которую вы готовы продать"
+    val text: String = "Введите цену в рублях, за которую вы готовы продать"
   }
 
   case class CreateOfferDescription(previous: State, draft: Draft) extends State with WithPrevious {
@@ -204,37 +242,62 @@ object State {
   case class CreatedOffer(previous: State, draft: Draft) extends State with WithPrevious {
     val tag: Tag = CreatedOfferTag
     val next: Seq[Tag] = Seq(StartedTag)
-    val text: String = s"Объявление размещено. Вы можете посмотреть его в разделе \"Мои объявления\"\n\n$draft"
+    val text: String = s"Объявление размещено. Вы можете посмотреть его в разделе \"Мои объявления\""
   }
 
   // my offers
 
-  case class MyOffers(previous: State, offers: Seq[Offer]) extends State with WithPrevious {
+  case class MyOffers(previous: State, offers: Seq[Offer]) extends State with WithPrevious with WithPhotos {
     val tag: Tag = MyOffersTag
-    val next: Seq[Tag] = Seq(BackTag)
+    val next: Seq[Tag] = /*offersTags ++ */Seq(BackTag)
+
     val text: String =
-      s"""
-         |Все ваши объявления:
-         |
-         |${offers.map(o => s"- ${o.id}: ${o.description.name}").mkString("\n")}
-         |
-         |Если хотите посмотреть одно подробнее, напишите мне его id
-         |""".stripMargin
+      if (summary.nonEmpty)
+        s"""
+           |Все ваши объявления:
+           |
+           |$summary
+           |""".stripMargin
+      else
+        "У вас пока что нет ни одного объявления"
+
+    val photos: Seq[TgPhoto] =
+      offers.take(10).map(offer => TgPhoto.first(offer.photos))
+
+//    def get(idx: Int): Offer =
+//      offers.drop(idx).head
+
+//    private lazy val offersTags: Seq[Button] =
+//      offers.indices.map(idx => s"$MyOffersTag-$idx")
+
+    private lazy val summary: String =
+      offers
+        .map(offer => s"- ${offer.description.name} (${offer.description.price} рублей)\n   ID: ${offer.id}")
+        .mkString("\n\n")
   }
 
-  case class MyOffer(previous: State, offer: Offer) extends State with WithPrevious with WithOfferID {
+//  object MyOffers {
+//    val chooseOne: Regex = s"$MyOffersTag-(\\d*)".r
+//  }
+
+  case class MyOffer(previous: State, offer: Offer) extends State with WithPrevious with WithOfferID with WithPhotos {
     val offerId: OfferID = offer.id
     val tag: Tag = MyOfferTag
     val next: Seq[Tag] = Seq(EditOfferTag, DeletedOfferTag, BackTag)
+
     val text: String =
       s"""
-         |Ваше объявление:
+         |${offer.description.name}
          |
-         |- ID: ${offer.id}
-         |- Название: ${offer.description.name}
-         |- Цена: ${offer.description.price}
-         |- Описание: ${offer.description.text}
+         |Цена: ${offer.description.price} рублей
+         |
+         |${offer.description.text}
+         |
+         |Источник: ${offer.source.getOrElse("Размещено через telegram-bot")}
          |""".stripMargin
+
+    val photos: Seq[TgPhoto] =
+      offer.photos.take(10).map(TgPhoto.from)
   }
 
   // edit my offer

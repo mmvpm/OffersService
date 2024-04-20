@@ -8,7 +8,7 @@ import com.bot4s.telegram.models.Message
 import com.github.mmvpm.bot.manager.ofs.OfsManager
 import com.github.mmvpm.bot.manager.ofs.error.OfsError
 import com.github.mmvpm.bot.manager.ofs.error.OfsError.InvalidSession
-import com.github.mmvpm.bot.model.{Draft, OfferPatch}
+import com.github.mmvpm.bot.model.{Draft, OfferPatch, TgPhoto}
 import com.github.mmvpm.bot.state.State.{Listing, _}
 import com.github.mmvpm.bot.util.StateUtils.StateSyntax
 import com.github.mmvpm.bot.util.StringUtils.RichString
@@ -23,6 +23,7 @@ class StateManagerImpl[F[_]: MonadCancelThrow](ofsManager: OfsManager[F]) extend
     tag match {
       case SearchTag                 => toSearch(current)
       case ListingTag                => toListing(current)
+//      case Listing.chooseOne(idx)    => toOneOfferIdx(current, idx.toInt)
       case OneOfferTag               => toOneOffer(current)
       case CreateOfferNameTag        => toCreateOfferName(current)
       case CreateOfferPriceTag       => toCreateOfferPrice(current)
@@ -30,6 +31,7 @@ class StateManagerImpl[F[_]: MonadCancelThrow](ofsManager: OfsManager[F]) extend
       case CreateOfferPhotoTag       => toCreateOfferPhoto(current)
       case CreatedOfferTag           => toCreatedOffer(current)
       case MyOffersTag               => toMyOffers(current)
+//      case MyOffers.chooseOne(idx)   => toMyOfferIdx(current, idx.toInt)
       case MyOfferTag                => toMyOffer(current)
       case EditOfferTag              => toEditOffer(current)
       case EditOfferNameTag          => toEditOfferName(current)
@@ -54,7 +56,14 @@ class StateManagerImpl[F[_]: MonadCancelThrow](ofsManager: OfsManager[F]) extend
       case Listing(_, offers, from) =>
         Listing(current, offers, from + Listing.StepSize).pure
       case _ =>
-        Listing.start(current, getOffers(20)).pure
+        message.text match {
+          case Some(query) =>
+            ofsManager
+              .search(query)
+              .handleDefaultErrors(current, ifSuccess = Listing.start(current, _).pure)
+          case None =>
+            Error(current, "Пожалуйста, введите поисковый запрос").pure
+        }
     }
 
   private def toOneOffer(current: State)(implicit message: Message): F[State] = {
@@ -69,6 +78,12 @@ class StateManagerImpl[F[_]: MonadCancelThrow](ofsManager: OfsManager[F]) extend
 
     newState.getOrElse(Error(current, "К сожалению, такого id не существует! Попробуйте ещё раз")).pure
   }
+
+//  private def toOneOfferIdx(current: State, idx: Int)(implicit message: Message): F[State] =
+//    findPrevious[Listing](current) match {
+//      case Some(listing) => OneOffer(current, listing.get(idx)).pure
+//      case None          => Error(current, "Произошла ошибка! Попробуйте ещё раз или начните сначала").pure
+//    }
 
   private def toCreateOfferName(current: State)(implicit message: Message): F[State] =
     CreateOfferName(current).pure
@@ -107,7 +122,8 @@ class StateManagerImpl[F[_]: MonadCancelThrow](ofsManager: OfsManager[F]) extend
         val newState = for {
           photoWithSizes <- message.photo
           photo <- photoWithSizes.lastOption
-          updatedDraft = draft.copy(photos = draft.photos ++ Seq(photo.fileId))
+          tgPhoto = TgPhoto(None, Some(photo.fileId))
+          updatedDraft = draft.copy(photos = draft.photos ++ Seq(tgPhoto))
         } yield CreateOfferPhoto(current, updatedDraft)
 
         newState.getOrElse(Error(current, "Пожалуйста, загрузите фото")).pure
@@ -119,9 +135,10 @@ class StateManagerImpl[F[_]: MonadCancelThrow](ofsManager: OfsManager[F]) extend
   private def toCreatedOffer(current: State)(implicit message: Message): F[State] =
     current match {
       case CreateOfferPhoto(_, draft) if draft.toOfferDescription.nonEmpty =>
-        ofsManager
-          .createOffer(draft.toOfferDescription.get)
-          .handleDefaultErrors(current, ifSuccess = _ => CreatedOffer(current, draft).pure)
+        (for {
+          offer <- ofsManager.createOffer(draft.toOfferDescription.get)
+          _ <- ofsManager.addOfferPhotos(offer.id, draft.photos)
+        } yield ()).handleDefaultErrors(current, ifSuccess = _ => CreatedOffer(current, draft).pure)
 
       case _ =>
         Error(current, "Произошла ошибка! Попробуйте ещё раз").pure
@@ -130,11 +147,6 @@ class StateManagerImpl[F[_]: MonadCancelThrow](ofsManager: OfsManager[F]) extend
   private def toMyOffers(current: State)(implicit message: Message): F[State] =
     ofsManager.getMyOffers
       .handleDefaultErrors(current, ifSuccess = MyOffers(current, _).pure)
-
-  private def getOffers(maxLength: Int): Seq[Offer] =
-    (0 until Random.nextInt(maxLength)).map { index =>
-      Offer(UUID.randomUUID, UUID.randomUUID, OfferDescription("n", index, "d"), OfferStatus.Active, None, Seq.empty)
-    }
 
   private def toMyOffer(current: State)(implicit message: Message): F[State] = {
     val optOffer = for {
@@ -152,6 +164,12 @@ class StateManagerImpl[F[_]: MonadCancelThrow](ofsManager: OfsManager[F]) extend
       case None          => Error(current, "К сожалению, такого id не существует! Попробуйте ещё раз").pure
     }
   }
+
+//  private def toMyOfferIdx(current: State, idx: Int)(implicit message: Message): F[State] =
+//    findPrevious[MyOffers](current) match {
+//      case Some(myOffers) => MyOffer(current, myOffers.get(idx)).pure
+//      case None => Error(current, "Произошла ошибка! Попробуйте ещё раз или начните сначала").pure
+//    }
 
   private def toEditOffer(current: State)(implicit message: Message): F[State] =
     current match {
@@ -184,7 +202,17 @@ class StateManagerImpl[F[_]: MonadCancelThrow](ofsManager: OfsManager[F]) extend
     }
 
   private def toDeleteOfferPhotos(current: State)(implicit message: Message): F[State] =
-    UpdatedOffer(current, "Все фотографии были удалены из объявления").pure
+    current match {
+      case state: WithOfferID =>
+        ofsManager
+          .deleteAllPhotos(state.offerId)
+          .handleDefaultErrors(
+            current,
+            ifSuccess = _ => UpdatedOffer(current, "Все фотографии были удалены из объявления").pure
+          )
+      case _ =>
+        Error(current, "Произошла ошибка! Попробуйте ещё раз").pure
+    }
 
   private def toUpdatedOffer(current: State)(implicit message: Message): F[State] =
     current match {
@@ -227,10 +255,16 @@ class StateManagerImpl[F[_]: MonadCancelThrow](ofsManager: OfsManager[F]) extend
             Error(current, "Пожалуйста, введите новое описание объявления").pure
         }
 
-      case AddOfferPhoto(_, _) =>
+      case AddOfferPhoto(_, offerId) =>
         message.photo.flatMap(_.lastOption) match {
           case Some(newPhoto) =>
-            UpdatedOffer(current, s"Фотография была добавлена к объявлению").pure
+            val tgPhoto = TgPhoto(None, Some(newPhoto.fileId))
+            ofsManager
+              .addOfferPhotos(offerId, Seq(tgPhoto))
+              .handleDefaultErrors(
+                current,
+                ifSuccess = _ => UpdatedOffer(current, s"Фотография была добавлена к объявлению").pure
+              )
           case None =>
             Error(current, "Пожалуйста, загрузите фото").pure
         }
@@ -287,6 +321,13 @@ class StateManagerImpl[F[_]: MonadCancelThrow](ofsManager: OfsManager[F]) extend
         case Left(error)          => Error(current, s"Произошла ошибка: ${error.details}. Попробуйте ещё раз").pure
       }
   }
+
+  private def findPrevious[T <: State](state: State): Option[T] =
+    state match {
+      case target: T => Some(target)
+      case Started => None
+      case _ => state.optPrevious.flatMap(s => findPrevious(s))
+    }
 
   private def safeRefreshOffers(current: State): F[State] =
     refreshOffers(current).recover(_ => current)
