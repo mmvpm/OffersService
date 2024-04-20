@@ -5,7 +5,7 @@ import cats.implicits.{catsSyntaxApplicativeError, catsSyntaxApplicativeId, toFl
 import cats.syntax.functor._
 import com.bot4s.telegram.api.declarative.{Callbacks, Command, Commands}
 import com.bot4s.telegram.cats.{Polling, TelegramBot}
-import com.bot4s.telegram.methods.{JsonRequest, MultipartRequest, Request, SendDice}
+import com.bot4s.telegram.methods.{Request, SendDice}
 import com.bot4s.telegram.models._
 import com.github.mmvpm.bot.client.telegram.TelegramClient
 import com.github.mmvpm.bot.client.telegram.request.SendMediaGroup

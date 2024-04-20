@@ -1,17 +1,17 @@
 package com.github.mmvpm.bot.client.ofs
 
-import cats.data.EitherT
 import cats.MonadThrow
+import cats.data.EitherT
 import cats.implicits.{catsSyntaxApplicativeError, toBifunctorOps, toFunctorOps}
-import com.github.mmvpm.model.{OfferDescription, OfferID, Session}
 import com.github.mmvpm.bot.OfsConfig
+import com.github.mmvpm.bot.client.ofs.error._
 import com.github.mmvpm.bot.client.ofs.request._
 import com.github.mmvpm.bot.client.ofs.response._
-import com.github.mmvpm.bot.client.ofs.error._
-import io.circe.generic.auto._
 import com.github.mmvpm.bot.client.ofs.util.CirceInstances._
 import com.github.mmvpm.bot.model.{OfferPatch, TgPhoto}
+import com.github.mmvpm.model.{OfferDescription, OfferID, Session}
 import io.circe.Error
+import io.circe.generic.auto._
 import sttp.client3._
 import sttp.client3.circe._
 

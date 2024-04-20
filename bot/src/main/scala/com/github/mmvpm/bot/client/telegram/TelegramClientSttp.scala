@@ -27,4 +27,3 @@ class TelegramClientSttp[F[_]: MonadThrow](token: String, sttpBackend: SttpBacke
         case Left(error) => println(s"Telegram error: $error"); Array.empty
       }
 }
-

@@ -3,7 +3,7 @@ package com.github.mmvpm.bot.client.ofs
 import cats.data.EitherT
 import com.github.mmvpm.bot.client.ofs.error.OfsClientError
 import com.github.mmvpm.bot.client.ofs.response._
-import com.github.mmvpm.bot.model.{Draft, OfferPatch, TgPhoto}
+import com.github.mmvpm.bot.model.{OfferPatch, TgPhoto}
 import com.github.mmvpm.model.{OfferDescription, OfferID, Session}
 
 trait OfsClient[F[_]] {

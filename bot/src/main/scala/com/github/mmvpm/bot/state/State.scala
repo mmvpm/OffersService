@@ -1,10 +1,7 @@
 package com.github.mmvpm.bot.state
 
 import com.github.mmvpm.bot.model.{Button, Draft, Tag, TgPhoto}
-import com.github.mmvpm.bot.state.State.Listing.StepSize
 import com.github.mmvpm.model.{Offer, OfferID}
-
-import scala.util.matching.Regex
 
 sealed trait State {
   def tag: Tag
@@ -45,12 +42,12 @@ object State {
 
   def buttonBy(tag: Tag, state: State): Button =
     tag match {
-      case SearchTag               => "Найти товар"
-      case ListingTag              => "На следующую страницу"
+      case SearchTag  => "Найти товар"
+      case ListingTag => "На следующую страницу"
 //      case Listing.chooseOne(idx)  => state.asInstanceOf[Listing].get(idx.toInt).description.name
-      case CreateOfferNameTag      => "Разместить объявление"
-      case CreatedOfferTag         => "Опубликовать объявление"
-      case MyOffersTag             => "Посмотреть мои объявления"
+      case CreateOfferNameTag => "Разместить объявление"
+      case CreatedOfferTag    => "Опубликовать объявление"
+      case MyOffersTag        => "Посмотреть мои объявления"
 //      case MyOffers.chooseOne(idx) => state.asInstanceOf[MyOffers].get(idx.toInt).description.name
       case EditOfferTag            => "Изменить это объявление"
       case EditOfferNameTag        => "Название"
@@ -249,7 +246,7 @@ object State {
 
   case class MyOffers(previous: State, offers: Seq[Offer]) extends State with WithPrevious with WithPhotos {
     val tag: Tag = MyOffersTag
-    val next: Seq[Tag] = /*offersTags ++ */Seq(BackTag)
+    val next: Seq[Tag] = /*offersTags ++ */ Seq(BackTag)
 
     val text: String =
       if (summary.nonEmpty)

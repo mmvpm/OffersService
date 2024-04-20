@@ -1,6 +1,5 @@
 package com.github.mmvpm.bot.state
 
-import cats.Monad
 import cats.data.EitherT
 import cats.effect.kernel.MonadCancelThrow
 import cats.implicits.{catsSyntaxApplicativeError, toFlatMapOps, toFunctorOps}
@@ -12,17 +11,13 @@ import com.github.mmvpm.bot.model.{Draft, OfferPatch, TgPhoto}
 import com.github.mmvpm.bot.state.State.{Listing, _}
 import com.github.mmvpm.bot.util.StateUtils.StateSyntax
 import com.github.mmvpm.bot.util.StringUtils.RichString
-import com.github.mmvpm.model.{Offer, OfferDescription, OfferStatus}
-
-import java.util.UUID
-import scala.util.Random
 
 class StateManagerImpl[F[_]: MonadCancelThrow](ofsManager: OfsManager[F]) extends StateManager[F] {
 
   override def getNextState(tag: String, current: State)(implicit message: Message): F[State] =
     tag match {
-      case SearchTag                 => toSearch(current)
-      case ListingTag                => toListing(current)
+      case SearchTag  => toSearch(current)
+      case ListingTag => toListing(current)
 //      case Listing.chooseOne(idx)    => toOneOfferIdx(current, idx.toInt)
       case OneOfferTag               => toOneOffer(current)
       case CreateOfferNameTag        => toCreateOfferName(current)
@@ -32,18 +27,18 @@ class StateManagerImpl[F[_]: MonadCancelThrow](ofsManager: OfsManager[F]) extend
       case CreatedOfferTag           => toCreatedOffer(current)
       case MyOffersTag               => toMyOffers(current)
 //      case MyOffers.chooseOne(idx)   => toMyOfferIdx(current, idx.toInt)
-      case MyOfferTag                => toMyOffer(current)
-      case EditOfferTag              => toEditOffer(current)
-      case EditOfferNameTag          => toEditOfferName(current)
-      case EditOfferPriceTag         => toEditOfferPrice(current)
-      case EditOfferDescriptionTag   => toEditOfferDescription(current)
-      case AddOfferPhotoTag          => toAddOfferPhoto(current)
-      case DeleteOfferPhotosTag      => toDeleteOfferPhotos(current)
-      case UpdatedOfferTag           => toUpdatedOffer(current)
-      case DeletedOfferTag           => toDeleteOffer(current)
-      case LoggedInTag               => toLoggedIn(current)
-      case BackTag                   => toBack(current)
-      case StartedTag                => toStarted(current)
+      case MyOfferTag              => toMyOffer(current)
+      case EditOfferTag            => toEditOffer(current)
+      case EditOfferNameTag        => toEditOfferName(current)
+      case EditOfferPriceTag       => toEditOfferPrice(current)
+      case EditOfferDescriptionTag => toEditOfferDescription(current)
+      case AddOfferPhotoTag        => toAddOfferPhoto(current)
+      case DeleteOfferPhotosTag    => toDeleteOfferPhotos(current)
+      case UpdatedOfferTag         => toUpdatedOffer(current)
+      case DeletedOfferTag         => toDeleteOffer(current)
+      case LoggedInTag             => toLoggedIn(current)
+      case BackTag                 => toBack(current)
+      case StartedTag              => toStarted(current)
     }
 
   // transitions
@@ -325,8 +320,8 @@ class StateManagerImpl[F[_]: MonadCancelThrow](ofsManager: OfsManager[F]) extend
   private def findPrevious[T <: State](state: State): Option[T] =
     state match {
       case target: T => Some(target)
-      case Started => None
-      case _ => state.optPrevious.flatMap(s => findPrevious(s))
+      case Started   => None
+      case _         => state.optPrevious.flatMap(s => findPrevious(s))
     }
 
   private def safeRefreshOffers(current: State): F[State] =

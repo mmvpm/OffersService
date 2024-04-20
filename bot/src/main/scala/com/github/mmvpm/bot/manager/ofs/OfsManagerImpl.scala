@@ -5,7 +5,7 @@ import cats.effect.std.Random
 import cats.implicits.{toFunctorOps, toTraverseOps}
 import cats.{Functor, Monad}
 import com.bot4s.telegram.models.Message
-import com.github.mmvpm.bot.client.ofs.{OfsClient, error}
+import com.github.mmvpm.bot.client.ofs.OfsClient
 import com.github.mmvpm.bot.client.ofs.error.{OfsApiClientError, OfsClientError}
 import com.github.mmvpm.bot.client.ofs.response.{OfsOffer, UserIdResponse}
 import com.github.mmvpm.bot.manager.ofs.OfsManagerImpl._
@@ -13,9 +13,9 @@ import com.github.mmvpm.bot.manager.ofs.error.OfsError
 import com.github.mmvpm.bot.manager.ofs.error.OfsError._
 import com.github.mmvpm.bot.manager.ofs.response.LoginOrRegisterResponse
 import com.github.mmvpm.bot.manager.ofs.response.LoginOrRegisterResponse._
-import com.github.mmvpm.bot.model.{Draft, OfferPatch, TgPhoto}
+import com.github.mmvpm.bot.model.{OfferPatch, TgPhoto}
 import com.github.mmvpm.bot.state.Storage
-import com.github.mmvpm.model.{Offer, OfferDescription, OfferID, OfferStatus, Session}
+import com.github.mmvpm.model._
 import sttp.model.StatusCode
 
 class OfsManagerImpl[F[_]: Monad](ofsClient: OfsClient[F], sessionStorage: Storage[Option[Session]], random: Random[F])
@@ -83,7 +83,7 @@ class OfsManagerImpl[F[_]: Monad](ofsClient: OfsClient[F], sessionStorage: Stora
 
   def addOfferPhotos(offerId: OfferID, photos: Seq[TgPhoto])(implicit message: Message): EitherT[F, OfsError, Unit] =
     sessionStorage.get match {
-      case None => EitherT.leftT(InvalidSession)
+      case None          => EitherT.leftT(InvalidSession)
       case Some(session) => addOfferPhotos(session, offerId, photos)
     }
 
