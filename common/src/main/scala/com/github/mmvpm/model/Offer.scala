@@ -7,5 +7,6 @@ case class Offer(
     userId: UserID,
     description: OfferDescription,
     status: OfferStatus,
-    source: Option[String]
+    source: Option[String],
+    photos: Seq[Photo]
 )

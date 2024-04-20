@@ -4,9 +4,9 @@ import cats.Monad
 import cats.data.{EitherT, NonEmptyList}
 import cats.effect.kernel.MonadCancelThrow
 import cats.implicits._
-import com.github.mmvpm.model.{Offer, OfferID, UserID}
+import com.github.mmvpm.model.{Offer, OfferID, Photo, PhotoID, UserID}
 import com.github.mmvpm.service.dao.error._
-import com.github.mmvpm.service.dao.schema.{DoobieSupport, OfferPatch, OffersEntry}
+import com.github.mmvpm.service.dao.schema.{DoobieSupport, OfferPatch, OffersEntry, PhotosEntry, UserOffersEntry}
 import com.github.mmvpm.util.Logging
 import doobie.ConnectionIO
 import doobie.implicits._
@@ -21,9 +21,12 @@ class OfferDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
     with DoobieSupport
     with Logging {
 
-  override def getOffer(offerId: OfferID): EitherT[F, OfferDaoError, Offer] =
-    selectFromOffers(offerId)
-      .map(_.toOffer)
+  def getOffer(offerId: OfferID): EitherT[F, OfferDaoError, Offer] =
+    (for {
+      offersEntry <- selectFromOffers(offerId)
+      photosEntries <- selectFromPhotos(offerId)
+      offer = offersEntry.toOffer(photosEntries)
+    } yield offer)
       .transact(tr)
       .attemptT
       .leftMap {
@@ -31,37 +34,89 @@ class OfferDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
         case error         => InternalOfferDaoError(error.getMessage)
       }
 
-  override def getOffers(offerIds: List[OfferID]): EitherT[F, OfferDaoError, List[Offer]] =
+  def getOffers(offerIds: List[OfferID]): EitherT[F, OfferDaoError, List[Offer]] =
     NonEmptyList.fromList(offerIds) match {
       case None =>
         EitherT.pure(List.empty[Offer])
       case Some(nel) =>
-        selectFromOffers(nel)
-          .map(_.map(_.toOffer))
+        (for {
+          offersEntries <- selectFromOffers(nel)
+          offers <- offersEntries.traverse { offersEntry =>
+            selectFromPhotos(offersEntry.id).map(offersEntry.toOffer)
+          }
+        } yield offers)
           .transact(tr)
           .attemptT
           .leftMap(error => InternalOfferDaoError(error.getMessage))
     }
 
-  override def getOffersByUser(userId: UserID): EitherT[F, OfferDaoError, List[Offer]] =
-    selectFromOffersByUser(userId)
-      .map(_.map(_.toOffer))
+  def getOffersByUser(userId: UserID): EitherT[F, OfferDaoError, List[Offer]] =
+    (for {
+      offersEntries <- selectFromOffersByUser(userId)
+      offers <- offersEntries.traverse { offersEntry =>
+        selectFromPhotos(offersEntry.id).map(offersEntry.toOffer)
+      }
+    } yield offers)
       .transact(tr)
       .attemptT
       .leftMap(error => InternalOfferDaoError(error.getMessage))
 
-  override def createOffer(offer: Offer): EitherT[F, OfferDaoError, Unit] =
-    Monad[ConnectionIO]
-      .map2(insertIntoOffers(offer), insertIntoUserOffers(offer))(_ && _)
+  def createOffer(offer: Offer): EitherT[F, OfferDaoError, Unit] =
+    insertOfferToAllTables(offer)
       .transact(tr)
       .attemptT
       .handleDefaultErrors
 
-  override def updateOffer(userId: UserID, offerId: OfferID, patch: OfferPatch): EitherT[F, OfferDaoError, Unit] =
+  def updateOffer(userId: UserID, offerId: OfferID, patch: OfferPatch): EitherT[F, OfferDaoError, Unit] =
     updateOffers(userId, offerId, patch)
       .transact(tr)
       .attemptT
       .handleDefaultErrors
+
+  def addPhotos(userId: UserID, offerId: OfferID, photos: Seq[Photo]): EitherT[F, OfferDaoError, Unit] =
+    checkOfferBelonging(userId, offerId)
+      .flatMap(_ => insertPhotosToAllTables(offerId, photos))
+      .transact(tr)
+      .attemptT
+      .leftMap {
+        case UnexpectedEnd => OfferNotFoundDaoError(offerId)
+        case error         => InternalOfferDaoError(error.getMessage)
+      }
+      .flatMap { insertedPhotos =>
+        val success = insertedPhotos == photos.size
+        EitherT.cond(success, (), InternalOfferDaoError(s"only $insertedPhotos/${photos.size} photos was inserted"))
+      }
+
+  def deleteAllPhotos(userId: UserID, offerId: OfferID): EitherT[F, OfferDaoError, Unit] =
+    checkOfferBelonging(userId, offerId)
+      .flatMap(_ => deleteFromPhotos(offerId))
+      .transact(tr)
+      .attemptT
+      .void
+      .leftMap {
+        case UnexpectedEnd => OfferNotFoundDaoError(offerId)
+        case error         => InternalOfferDaoError(error.getMessage)
+      }
+
+  // internal
+
+  private def insertOfferToAllTables(offer: Offer): ConnectionIO[Boolean] =
+    Monad[ConnectionIO].map3(
+      insertIntoOffers(offer),
+      insertIntoUserOffers(offer),
+      insertPhotosToAllTables(offer.id, offer.photos).map(_ == offer.photos.size)
+    )(_ && _ && _)
+
+  private def insertPhotosToAllTables(offerId: OfferID, photos: Seq[Photo]): ConnectionIO[Int] =
+    photos
+      .traverse(insertPhotoToAllTables(offerId, _))
+      .map(_.count(_ == true))
+
+  private def insertPhotoToAllTables(offerId: OfferID, photo: Photo): ConnectionIO[Boolean] =
+    Monad[ConnectionIO].map2(
+      insertIntoPhotos(photo),
+      insertIntoOfferPhotos(offerId, photo.id)
+    )(_ && _)
 
   // queries
 
@@ -83,6 +138,12 @@ class OfferDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
       where """ ++ in(fr"id", offerIds))
       .query[OffersEntry]
       .to[List]
+
+  private def checkOfferBelonging(userId: UserID, offerId: OfferID): ConnectionIO[Unit] =
+    sql"select offer_id, user_id from user_offers where user_id = $userId and offer_id = $offerId"
+      .query[UserOffersEntry]
+      .unique // throws UnexpectedEnd
+      .void
 
   private def selectFromOffersByUser(userId: UserID): ConnectionIO[List[OffersEntry]] =
     sql"""
@@ -107,7 +168,38 @@ class OfferDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
     (fr"update offers set" ++ sqlByPatch(patch) ++
       fr"from user_offers uo where id = $offerId and uo.user_id = $userId").update.run.map(_ == 1)
 
-  // internal
+  // photos
+
+  private def selectFromPhotos(offerId: OfferID): ConnectionIO[List[PhotosEntry]] =
+    sql"""
+      select id, url, blob
+      from photos
+      join offer_photos op on photos.id = op.photo_id
+      where offer_id = $offerId
+      """
+      .query[PhotosEntry]
+      .to[List]
+
+  private def insertIntoPhotos(photo: Photo): ConnectionIO[Boolean] =
+    sql"insert into photos values (${photo.id}, ${photo.url}, ${photo.blob})".update.run.map(_ == 1)
+
+  private def insertIntoOfferPhotos(offerId: OfferID, photoId: PhotoID): ConnectionIO[Boolean] =
+    sql"insert into offer_photos values ($photoId, $offerId)".update.run.map(_ == 1)
+
+  private def deleteFromPhotos(offerId: OfferID): ConnectionIO[Int] =
+    sql"""
+      with deleted_photo_ids as (
+        delete
+        from offer_photos
+        where offer_id = $offerId
+        returning photo_id
+      )
+      delete
+      from photos
+      where id in (select photo_id from deleted_photo_ids);
+       """.update.run
+
+  // utils
 
   private def sqlByPatch(patch: OfferPatch): Fragment = {
     val nameSql = patch.name.map(name => fr"name = $name")

@@ -2,20 +2,27 @@ package com.github.mmvpm.service.service.offer
 
 import cats.data.{EitherT, NonEmptyList}
 import cats.effect.std.UUIDGen
-import cats.implicits.toFunctorOps
+import cats.implicits.{toFunctorOps, toTraverseOps}
 import cats.{Functor, Monad}
 import com.github.mmvpm.model._
 import com.github.mmvpm.service.api.error._
-import com.github.mmvpm.service.api.request.{CreateOfferRequest, GetOffersRequest, UpdateOfferRequest}
+import com.github.mmvpm.service.api.request.{
+  AddOfferPhotosRequest,
+  CreateOfferRequest,
+  GetOffersRequest,
+  UpdateOfferRequest
+}
 import com.github.mmvpm.service.api.response.{OfferResponse, OffersResponse, OkResponse}
 import com.github.mmvpm.service.dao.error._
 import com.github.mmvpm.service.dao.offer.OfferDao
 import com.github.mmvpm.service.dao.schema.OfferPatch
 import com.github.mmvpm.service.service.offer.OfferServiceImpl._
 
+import java.net.URL
+
 class OfferServiceImpl[F[_]: Monad: UUIDGen](offerDao: OfferDao[F]) extends OfferService[F] {
 
-  override def getOffer(offerId: OfferID): EitherT[F, ApiError, OfferResponse] =
+  def getOffer(offerId: OfferID): EitherT[F, ApiError, OfferResponse] =
     offerDao
       .getOffer(offerId)
       .map(OfferResponse)
@@ -27,20 +34,20 @@ class OfferServiceImpl[F[_]: Monad: UUIDGen](offerDao: OfferDao[F]) extends Offe
       .map(OffersResponse)
       .convertError
 
-  override def getOffers(userId: UserID): EitherT[F, ApiError, OffersResponse] =
+  def getOffers(userId: UserID): EitherT[F, ApiError, OffersResponse] =
     offerDao
       .getOffersByUser(userId)
       .map(OffersResponse)
       .convertError
 
-  override def createOffer(userId: UserID, request: CreateOfferRequest): EitherT[F, ApiError, OfferResponse] =
+  def createOffer(userId: UserID, request: CreateOfferRequest): EitherT[F, ApiError, OfferResponse] =
     (for {
       offerId <- EitherT.liftF(UUIDGen[F].randomUUID)
-      offer = Offer(offerId, userId, request.description, OfferStatus.Active, request.source)
+      offer = Offer(offerId, userId, request.description, OfferStatus.Active, request.source, Seq.empty)
       _ <- offerDao.createOffer(offer)
     } yield OfferResponse(offer)).convertError
 
-  override def updateOffer(
+  def updateOffer(
       userId: UserID,
       offerId: OfferID,
       request: UpdateOfferRequest
@@ -51,11 +58,32 @@ class OfferServiceImpl[F[_]: Monad: UUIDGen](offerDao: OfferDao[F]) extends Offe
       .map(OfferResponse)
       .convertError
 
-  override def deleteOffer(userId: UserID, offerId: OfferID): EitherT[F, ApiError, OkResponse] =
+  def deleteOffer(userId: UserID, offerId: OfferID): EitherT[F, ApiError, OkResponse] =
     offerDao
       .updateOffer(userId, offerId, OfferPatch(status = Some(OfferStatus.Deleted)))
       .as(OkResponse())
       .convertError
+
+  def addPhotos(userId: UserID, offerId: OfferID, request: AddOfferPhotosRequest): EitherT[F, ApiError, OfferResponse] =
+    (for {
+      photos <- EitherT.liftF(request.photoUrls.traverse(createPhoto))
+      _ <- offerDao.addPhotos(userId, offerId, photos)
+      offer <- offerDao.getOffer(offerId)
+    } yield OfferResponse(offer)).convertError
+
+  def deleteAllPhotos(userId: UserID, offerId: OfferID): EitherT[F, ApiError, OkResponse] =
+    offerDao
+      .deleteAllPhotos(userId, offerId)
+      .as(OkResponse())
+      .convertError
+
+  // internal
+
+  private def createPhoto(url: URL): F[Photo] =
+    for {
+      id <- UUIDGen[F].randomUUID
+      photo = Photo(id, Some(url), None)
+    } yield photo
 }
 
 object OfferServiceImpl {

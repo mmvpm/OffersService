@@ -31,7 +31,8 @@ create table offers
     name        text    not null,
     price       integer not null,
     description text    not null,
-    status      text    not null
+    status      text    not null,
+    source      text default null
 );
 
 create table users
@@ -48,6 +49,19 @@ create table user_offers
 (
     offer_id uuid primary key references offers (id),
     user_id  uuid not null references users (id)
+);
+
+create table photos
+(
+    id   uuid primary key,
+    url  text  default null,
+    blob bytea default null
+);
+
+create table offer_photos
+(
+    photo_id uuid primary key references photos (id),
+    offer_id uuid not null references offers (id)
 );
 ```
 
