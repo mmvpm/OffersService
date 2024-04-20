@@ -22,7 +22,9 @@ sbt "project bot" run
 
 ## Internals
 
-### Actual database schema
+### Database
+
+#### Actual schema
 
 ```postgresql
 create table offers
@@ -65,7 +67,18 @@ create table offer_photos
 );
 ```
 
-### Authorization
+#### Indices
+
+Index for searching by offers:
+
+```postgresql
+create index offers_name_description_idx on offers
+    using gin (to_tsvector('russian', name || ' ' || description));
+```
+
+### REST API
+
+#### Authorization
 
 Each user has login (telegram @login) and password, and, in order to use the service, he should get a session and then
 attach it to each request
