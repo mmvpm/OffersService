@@ -6,7 +6,7 @@ import cats.implicits.{toFunctorOps, toTraverseOps}
 import cats.{Functor, Monad}
 import com.github.mmvpm.model._
 import com.github.mmvpm.service.api.error._
-import com.github.mmvpm.service.api.request.{AddOfferPhotosRequest, CreateOfferRequest, GetOffersRequest, UpdateOfferRequest}
+import com.github.mmvpm.service.api.request._
 import com.github.mmvpm.service.api.response.{OfferIdsResponse, OfferResponse, OffersResponse, OkResponse}
 import com.github.mmvpm.service.dao.error._
 import com.github.mmvpm.service.dao.offer.OfferDao
