@@ -1,7 +1,7 @@
 package com.github.mmvpm.parsing.parser
 
-import cats.data.EitherT
 import cats.Monad
+import cats.data.EitherT
 import cats.effect.Sync
 import com.github.mmvpm.parsing.model.{Page, YoulaItem}
 import com.github.mmvpm.parsing.parser.response.YoulaState

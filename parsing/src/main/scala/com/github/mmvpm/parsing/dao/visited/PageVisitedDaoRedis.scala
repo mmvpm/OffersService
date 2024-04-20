@@ -1,10 +1,10 @@
 package com.github.mmvpm.parsing.dao.visited
 
-import cats.data.EitherT
 import cats.Monad
+import cats.data.EitherT
 import cats.effect.kernel.Sync
-import com.github.mmvpm.parsing.dao.util.PageSyntax.RichPage
 import com.github.mmvpm.parsing.dao.VisitedKey
+import com.github.mmvpm.parsing.dao.util.PageSyntax.RichPage
 import com.github.mmvpm.parsing.dao.util.RedisClientFactory
 import com.github.mmvpm.parsing.model.Page
 import com.github.mmvpm.util.EitherUtils.safe

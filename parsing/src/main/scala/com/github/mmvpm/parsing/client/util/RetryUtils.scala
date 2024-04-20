@@ -4,9 +4,9 @@ import cats.effect.kernel.Async
 import cats.implicits.catsSyntaxApplicativeId
 import com.github.mmvpm.parsing.RetryConfiguration
 import com.github.mmvpm.util.Logging
-import retry.{RetryDetails, RetryPolicy}
 import retry.RetryDetails.{GivingUp, WillDelayAndRetry}
 import retry.RetryPolicies.{fullJitter, limitRetries}
+import retry.{RetryDetails, RetryPolicy}
 import sttp.client3.SttpClientException
 
 trait RetryUtils[F[_]] {

@@ -1,14 +1,14 @@
 package com.github.mmvpm.parsing.client.youla
 
-import cats.data.EitherT
 import cats.MonadThrow
+import cats.data.EitherT
 import cats.implicits.{toBifunctorOps, toFunctorOps}
 import com.github.mmvpm.parsing.YoulaConfig
 import com.github.mmvpm.parsing.client.youla.request.CatalogRequest
 import com.github.mmvpm.parsing.client.youla.response.CatalogResponse
 import io.circe.generic.auto._
-import sttp.client3.{SttpBackend, UriContext, basicRequest}
 import sttp.client3.circe._
+import sttp.client3.{SttpBackend, UriContext, basicRequest}
 
 class YoulaClientSttp[F[_]: MonadThrow](config: YoulaConfig, sttpBackend: SttpBackend[F, Any]) extends YoulaClient[F] {
 

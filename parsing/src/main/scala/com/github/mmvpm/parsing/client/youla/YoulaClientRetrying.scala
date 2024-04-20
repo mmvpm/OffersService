@@ -1,7 +1,7 @@
 package com.github.mmvpm.parsing.client.youla
 
-import cats.data.EitherT
 import cats.MonadThrow
+import cats.data.EitherT
 import com.github.mmvpm.parsing.client.util.RetryUtils
 import com.github.mmvpm.parsing.client.youla.response.CatalogResponse
 import retry.{Sleep, retryingOnSomeErrors}

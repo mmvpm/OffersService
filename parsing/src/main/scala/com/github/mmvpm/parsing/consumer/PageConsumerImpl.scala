@@ -1,17 +1,17 @@
 package com.github.mmvpm.parsing.consumer
 
-import cats.data.EitherT
 import cats.Monad
-import cats.effect.{Sync, Temporal}
+import cats.data.EitherT
+import cats.effect.Temporal
 import cats.implicits.{toFunctorOps, toTraverseOps}
+import com.github.mmvpm.parsing.YoulaConfig
 import com.github.mmvpm.parsing.client.ofs.OfsClient
+import com.github.mmvpm.parsing.client.ofs.error._
+import com.github.mmvpm.parsing.consumer.PageConsumerImpl.getPassword
 import com.github.mmvpm.parsing.dao.queue.PageQueueReader
 import com.github.mmvpm.parsing.dao.visited.PageVisitedDao
 import com.github.mmvpm.parsing.model.{Page, YoulaItem, YoulaUser}
 import com.github.mmvpm.parsing.parser.PageParser
-import com.github.mmvpm.parsing.YoulaConfig
-import com.github.mmvpm.parsing.client.ofs.error._
-import com.github.mmvpm.parsing.consumer.PageConsumerImpl.getPassword
 import com.github.mmvpm.util.Logging
 import org.apache.commons.codec.digest.DigestUtils
 import sttp.model.StatusCode
@@ -76,10 +76,9 @@ object PageConsumerImpl {
 
   private val OfsUserPasswordSalt = "password"
 
-  /**
-   * To simplify the service, we don't save the conversion "youla-user-id" -> "generated-password".
-   * Instead, we get a password by "youla-user-id" using a simple deterministic algorithm.
-   */
+  /** To simplify the service, we don't save the conversion "youla-user-id" -> "generated-password". Instead, we get a
+    * password by "youla-user-id" using a simple deterministic algorithm.
+    */
   private def getPassword(user: YoulaUser): String =
     DigestUtils.md5Hex(user.id + user.name + OfsUserPasswordSalt)
 }

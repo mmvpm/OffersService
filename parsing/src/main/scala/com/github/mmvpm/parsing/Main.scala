@@ -1,7 +1,7 @@
 package com.github.mmvpm.parsing
 
-import cats.effect.{ExitCode, IO, IOApp}
 import cats.effect.std.Random
+import cats.effect.{ExitCode, IO, IOApp}
 import com.github.mmvpm.parsing.client.ofs.{OfsClient, OfsClientRetrying, OfsClientSttp}
 import com.github.mmvpm.parsing.client.util.{RetryUtils, RetryUtilsImpl}
 import com.github.mmvpm.parsing.client.youla.{YoulaClient, YoulaClientRetrying, YoulaClientSttp}
@@ -10,9 +10,9 @@ import com.github.mmvpm.parsing.dao.queue._
 import com.github.mmvpm.parsing.dao.util.RedisClientFactory
 import com.github.mmvpm.parsing.dao.visited.{PageVisitedDao, PageVisitedDaoRedis}
 import com.github.mmvpm.parsing.parser.{PageParser, PageParserJsoup}
-import com.github.mmvpm.parsing.producer.{PageProducer, PageProducerImpl}
 import com.github.mmvpm.parsing.producer.catalog.{CatalogConverter, CatalogConverterImpl}
 import com.github.mmvpm.parsing.producer.query.{QueryGenerator, QueryGeneratorFromSeq}
+import com.github.mmvpm.parsing.producer.{PageProducer, PageProducerImpl}
 import com.github.mmvpm.parsing.util.ResourcesUtils.unsafeReadLines
 import com.github.mmvpm.util.Logging
 import net.ruippeixotog.scalascraper.browser._

@@ -23,7 +23,7 @@ class OfsClientRetrying[F[_]: MonadThrow: Sleep](ofsClient: OfsClient[F], retryU
     retry(ofsClient.createOffer(session, offer, source))
 
   def addPhotos(session: Session, offerId: OfferID, photoUrls: Seq[URL]): EitherT[F, OfsError, OfferResponse] =
-  retry(ofsClient.addPhotos(session, offerId, photoUrls))
+    retry(ofsClient.addPhotos(session, offerId, photoUrls))
 
   private def retry[Response](call: EitherT[F, OfsError, Response]): EitherT[F, OfsError, Response] =
     EitherT {

@@ -1,23 +1,22 @@
 package com.github.mmvpm.parsing.client.ofs
 
-import cats.data.EitherT
 import cats.MonadThrow
+import cats.data.EitherT
 import cats.implicits.{toBifunctorOps, toFunctorOps}
 import com.github.mmvpm.model.{OfferDescription, OfferID, Session}
 import com.github.mmvpm.parsing.OfsConfig
-import com.github.mmvpm.parsing.client.ofs.request._
-import com.github.mmvpm.parsing.client.ofs.response._
 import com.github.mmvpm.parsing.client.SessionHeaderName
 import com.github.mmvpm.parsing.client.ofs.error._
-import io.circe.generic.auto._
+import com.github.mmvpm.parsing.client.ofs.request._
+import com.github.mmvpm.parsing.client.ofs.response._
 import io.circe.Error
+import io.circe.generic.auto._
 import sttp.client3._
 import sttp.client3.circe._
 
 import java.net.URL
 
-class OfsClientSttp[F[_]: MonadThrow](ofsConfig: OfsConfig, sttpBackend: SttpBackend[F, Any])
-    extends OfsClient[F] {
+class OfsClientSttp[F[_]: MonadThrow](ofsConfig: OfsConfig, sttpBackend: SttpBackend[F, Any]) extends OfsClient[F] {
 
   def signUp(name: String, login: String, password: String): EitherT[F, OfsError, SignUpResponse] = {
     val requestUri = uri"${ofsConfig.baseUrl}/api/v1/auth/sign-up"
