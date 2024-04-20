@@ -3,7 +3,12 @@ package com.github.mmvpm.service.service.offer
 import cats.data.EitherT
 import com.github.mmvpm.model.{OfferID, UserID}
 import com.github.mmvpm.service.api.error.ApiError
-import com.github.mmvpm.service.api.request.{AddOfferPhotosRequest, CreateOfferRequest, GetOffersRequest, UpdateOfferRequest}
+import com.github.mmvpm.service.api.request.{
+  AddOfferPhotosRequest,
+  CreateOfferRequest,
+  GetOffersRequest,
+  UpdateOfferRequest
+}
 import com.github.mmvpm.service.api.response.{OfferResponse, OffersResponse, OkResponse}
 
 trait OfferService[F[_]] {

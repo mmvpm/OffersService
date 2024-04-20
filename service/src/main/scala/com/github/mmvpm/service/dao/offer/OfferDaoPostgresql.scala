@@ -95,7 +95,7 @@ class OfferDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
       .void
       .leftMap {
         case UnexpectedEnd => OfferNotFoundDaoError(offerId)
-        case error => InternalOfferDaoError(error.getMessage)
+        case error         => InternalOfferDaoError(error.getMessage)
       }
 
   // internal
@@ -184,7 +184,7 @@ class OfferDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
     sql"insert into photos values (${photo.id}, ${photo.url}, ${photo.blob})".update.run.map(_ == 1)
 
   private def insertIntoOfferPhotos(offerId: OfferID, photoId: PhotoID): ConnectionIO[Boolean] =
-     sql"insert into offer_photos values ($photoId, $offerId)".update.run.map(_ == 1)
+    sql"insert into offer_photos values ($photoId, $offerId)".update.run.map(_ == 1)
 
   private def deleteFromPhotos(offerId: OfferID): ConnectionIO[Int] =
     sql"""
