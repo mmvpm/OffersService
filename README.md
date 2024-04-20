@@ -86,4 +86,10 @@ State machine diagram (without authorization to simplify):
 
 And authorization separately:
 
-<img src="docs/bot-state-machine-auth.png" alt="bot-state-machine-auth"/>
+<img src="docs/bot-state-machine-auth.png" width="900" alt="bot-state-machine-auth"/>
+
+### Parsing
+
+Parsing gets offers from youla.ru to fill in the contents of my service 
+
+<img src="docs/parsing-arch.png" width="600" alt="parsing-arch"/>
