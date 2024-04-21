@@ -16,4 +16,7 @@ trait OfferDao[F[_]] {
   def searchPhrase(query: String, limit: Int): EitherT[F, OfferDaoError, List[OfferID]]
   def searchPlain(query: String, limit: Int): EitherT[F, OfferDaoError, List[OfferID]]
   def searchAnyWords(words: Seq[String], limit: Int): EitherT[F, OfferDaoError, List[OfferID]]
+  def searchPhraseName(query: String, limit: Int): EitherT[F, OfferDaoError, List[OfferID]]
+  def searchPlainName(query: String, limit: Int): EitherT[F, OfferDaoError, List[OfferID]]
+  def searchAnyWordsName(words: Seq[String], limit: Int): EitherT[F, OfferDaoError, List[OfferID]]
 }

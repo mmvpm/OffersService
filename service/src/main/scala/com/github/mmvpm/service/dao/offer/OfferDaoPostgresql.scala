@@ -116,6 +116,24 @@ class OfferDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
       .attemptT
       .leftMap(error => InternalOfferDaoError(error.getMessage))
 
+  def searchPhraseName(query: String, limit: Int): EitherT[F, OfferDaoError, List[OfferID]] =
+    selectFromOffersByPhraseName(query, limit)
+      .transact(tr)
+      .attemptT
+      .leftMap(error => InternalOfferDaoError(error.getMessage))
+
+  def searchPlainName(query: String, limit: Int): EitherT[F, OfferDaoError, List[OfferID]] =
+    selectFromOffersByPlainName(query, limit)
+      .transact(tr)
+      .attemptT
+      .leftMap(error => InternalOfferDaoError(error.getMessage))
+
+  def searchAnyWordsName(words: Seq[String], limit: Int): EitherT[F, OfferDaoError, List[OfferID]] =
+    selectFromOffersWithAnyWordName(words, limit)
+      .transact(tr)
+      .attemptT
+      .leftMap(error => InternalOfferDaoError(error.getMessage))
+
   // internal
 
   private def insertOfferToAllTables(offer: Offer): ConnectionIO[Boolean] =
@@ -246,6 +264,26 @@ class OfferDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
       select id
       from offers
       where to_tsvector('russian', name || ' ' || description) @@ to_tsquery('russian', ${words.mkString(" | ")})
+      limit $limit
+      """
+      .query[OfferID]
+      .to[List]
+
+  private def selectFromOffersByPhraseName(phrase: String, limit: Int): ConnectionIO[List[OfferID]] =
+    sql"select id from offers where to_tsvector('russian', name) @@ phraseto_tsquery('russian', $phrase) limit $limit"
+      .query[OfferID]
+      .to[List]
+
+  private def selectFromOffersByPlainName(plain: String, limit: Int): ConnectionIO[List[OfferID]] =
+    sql"select id from offers where to_tsvector('russian') @@ plainto_tsquery('russian', $plain) limit $limit"
+      .query[OfferID]
+      .to[List]
+
+  private def selectFromOffersWithAnyWordName(words: Seq[String], limit: Int): ConnectionIO[List[OfferID]] =
+    sql"""
+      select id
+      from offers
+      where to_tsvector('russian', name) @@ to_tsquery('russian', ${words.mkString(" | ")})
       limit $limit
       """
       .query[OfferID]

@@ -14,6 +14,7 @@ import com.github.mmvpm.service.dao.schema.OfferPatch
 import com.github.mmvpm.service.service.offer.OfferServiceImpl._
 
 import java.net.URL
+import scala.util.Random
 
 class OfferServiceImpl[F[_]: Monad: UUIDGen](offerDao: OfferDao[F]) extends OfferService[F] {
 
@@ -77,10 +78,21 @@ class OfferServiceImpl[F[_]: Monad: UUIDGen](offerDao: OfferDao[F]) extends Offe
   def search(query: String, limit: Int): EitherT[F, ApiError, OfferIdsResponse] =
     (for {
       // TODO: should be optimized
+      resultsPhraseName <- offerDao.searchPhraseName(query, limit)
+      resultsPlainName <- offerDao.searchPlainName(query, limit)
+      resultsAnyWordsName <- offerDao.searchAnyWordsName(query.split(' '), limit)
       resultsPhrase <- offerDao.searchPhrase(query, limit)
       resultsPlain <- offerDao.searchPlain(query, limit)
       resultsAnyWords <- offerDao.searchAnyWords(query.split(' '), limit)
-      results = (resultsPhrase ++ resultsPlain ++ resultsAnyWords).distinct.take(limit)
+      resultsAll = List(
+        Random.shuffle(resultsPhraseName),
+        Random.shuffle(resultsPlainName),
+        Random.shuffle(resultsAnyWordsName),
+        Random.shuffle(resultsPhrase),
+        Random.shuffle(resultsPlain),
+        Random.shuffle(resultsAnyWords)
+      ).flatten
+      results = resultsAll.distinct.take(limit)
     } yield OfferIdsResponse(results)).convertError
 
   // internal
