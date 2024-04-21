@@ -207,7 +207,7 @@ object State {
         |""".stripMargin
 
     val photos: Seq[TgPhoto] =
-      offer.photos.take(10).map(TgPhoto.from)
+      offer.photos.take(5).map(TgPhoto.from)
   }
 
   // create offer
@@ -259,7 +259,7 @@ object State {
         "У вас пока что нет ни одного объявления"
 
     val photos: Seq[TgPhoto] =
-      offers.take(10).map(offer => TgPhoto.first(offer.photos))
+      offers.take(5).map(offer => TgPhoto.first(offer.photos))
 
 //    def get(idx: Int): Offer =
 //      offers.drop(idx).head
@@ -294,7 +294,7 @@ object State {
          |""".stripMargin
 
     val photos: Seq[TgPhoto] =
-      offer.photos.take(10).map(TgPhoto.from)
+      offer.photos.take(5).map(TgPhoto.from)
   }
 
   // edit my offer

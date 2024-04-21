@@ -29,6 +29,7 @@ object Main extends IOApp.Simple {
       stateStorage = new StorageImpl[State](State.Started)
       sessionStorage = new StorageImpl[Option[Session]](None)
       lastMessageStorage = new StorageImpl[Option[MessageID]](None)
+      lastPhotosStorage = new StorageImpl[Option[Seq[MessageID]]](None)
 
       telegramClient: TelegramClient[IO] = new TelegramClientSttp[IO](token, sttpBackend)
       ofsClient: OfsClient[IO] = new OfsClientSttp[IO](config.ofs, sttpBackend)
@@ -44,6 +45,7 @@ object Main extends IOApp.Simple {
         manager,
         stateStorage,
         lastMessageStorage,
+        lastPhotosStorage,
         ofsManager,
         telegramClient
       )
