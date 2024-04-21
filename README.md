@@ -69,9 +69,12 @@ create table offer_photos
 
 #### Indices
 
-Index for searching by offers:
+Indices for searching by offers:
 
 ```postgresql
+create index offers_name_idx on offers
+    using gin (to_tsvector('russian', name));
+
 create index offers_name_description_idx on offers
     using gin (to_tsvector('russian', name || ' ' || description));
 ```
