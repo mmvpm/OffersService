@@ -6,6 +6,9 @@ import com.github.mmvpm.bot.model.MessageID
 import com.github.mmvpm.bot.state.State
 
 trait Renderer {
-  def render(state: State, editMessage: Option[MessageID])(implicit message: Message): Request[?]
-  def renderPhotos(state: State)(implicit message: Message): Option[Request[?]]
+  def render(
+      state: State,
+      editMessage: Option[MessageID],
+      photoIds: Option[Seq[MessageID]]
+  )(implicit message: Message): Seq[Request[?]]
 }

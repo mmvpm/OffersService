@@ -1,14 +1,14 @@
 package com.github.mmvpm.bot
 
 import cats.effect.Concurrent
-import cats.implicits.{catsSyntaxApplicativeError, catsSyntaxApplicativeId, toFlatMapOps}
+import cats.implicits.{catsSyntaxApplicativeError, toFlatMapOps, toTraverseOps}
 import cats.syntax.functor._
 import com.bot4s.telegram.api.declarative.{Callbacks, Command, Commands}
 import com.bot4s.telegram.cats.{Polling, TelegramBot}
 import com.bot4s.telegram.methods.{Request, SendDice}
 import com.bot4s.telegram.models._
 import com.github.mmvpm.bot.client.telegram.TelegramClient
-import com.github.mmvpm.bot.client.telegram.request.SendMediaGroup
+import com.github.mmvpm.bot.client.telegram.request.{EditMessageMedia, SendMediaGroup}
 import com.github.mmvpm.bot.manager.ofs.OfsManager
 import com.github.mmvpm.bot.manager.ofs.error.OfsError.InvalidSession
 import com.github.mmvpm.bot.manager.ofs.response.LoginOrRegisterResponse
@@ -25,6 +25,7 @@ class OfferServiceBot[F[_]: Concurrent](
     stateManager: StateManager[F],
     stateStorage: Storage[State],
     lastMessageStorage: Storage[Option[MessageID]],
+    lastPhotosStorage: Storage[Option[Seq[MessageID]]],
     ofsManager: OfsManager[F],
     telegramClient: TelegramClient[F]
 ) extends TelegramBot[F](token, sttpBackend)
@@ -65,7 +66,7 @@ class OfferServiceBot[F[_]: Concurrent](
       case Left(InvalidSession) =>
         val state: State = EnterPassword
         stateStorage.set(state)
-        requestLogged(renderer.render(state, None))
+        requestLogged(renderer.render(state, None, None))
       case Left(error) =>
         reply(s"Ошибка: ${error.details}. Попробуйте команду /start ещё раз").void
       case Right(response) =>
@@ -74,17 +75,15 @@ class OfferServiceBot[F[_]: Concurrent](
           case LoginOrRegisterResponse.Registered(password) => Registered(password)
         }
         val saveMessageId = !state.isInstanceOf[Registered] // to save password in the chat
-        requestLogged(renderer.render(state, None), saveMessageId)
+        requestLogged(renderer.render(state, None, None), saveMessageId)
     }
 
   private def replyResolved(tag: String)(implicit message: Message): F[Unit] =
     for {
       nextState <- stateManager.getNextState(tag, stateStorage.get)
       _ = stateStorage.set(withoutError(nextState))
-      optPhotosReply = renderer.renderPhotos(nextState)
-      reply = renderer.render(nextState, lastMessageStorage.get)
-      _ <- optPhotosReply.map(requestLogged(_)).getOrElse(().pure)
-      _ <- requestLogged(reply, saveMessageId = optPhotosReply.isEmpty)
+      replies = renderer.render(nextState, lastMessageStorage.get, lastPhotosStorage.get)
+      _ <- requestLogged(replies)
     } yield ()
 
   private def fail(implicit message: Message): F[Unit] =
@@ -98,26 +97,31 @@ class OfferServiceBot[F[_]: Concurrent](
       case _                  => state
     }
 
-  private def requestLogged(req: Request[?], saveMessageId: Boolean = true): F[Unit] =
-    (req match {
-      case my: SendMediaGroup =>
-        telegramClient.sendMediaGroup(my)
-      case _ =>
-        request(req)
-    }).map {
-      case edited: Either[Boolean, Message] =>
-        println(s"Edit $edited")
-      case sent: Message =>
-        if (saveMessageId) {
-          lastMessageStorage.set(Some(sent.messageId))(sent)
+  private def requestLogged(reqs: Seq[Request[?]], saveMessageId: Boolean = true): F[Unit] =
+    reqs
+      .traverse[F, Any] {
+        case my: SendMediaGroup   => telegramClient.sendMediaGroup(my).asInstanceOf[F[Any]]
+        case my: EditMessageMedia => telegramClient.editMessageMedia(my).asInstanceOf[F[Any]]
+        case req                  => request(req).asInstanceOf[F[Any]]
+      }
+      .map {
+        _.map {
+          case deleted: Boolean =>
+            println(s"Delete: $deleted")
+          case edited: Either[Boolean, Message] =>
+            println(s"Edit $edited")
+          case sent: Message =>
+            if (saveMessageId) {
+              lastMessageStorage.set(Some(sent.messageId))(sent)
+            }
+            println(s"Sent $sent")
+          case messages: Array[Message] =>
+            if (messages.nonEmpty && saveMessageId) {
+              lastPhotosStorage.set(Some(messages.map(_.messageId)))(messages.head)
+            }
+            println(s"Array ${messages.mkString("\n")}")
+          case any =>
+            println(s"Any $any")
         }
-        println(s"Sent $sent")
-      case messages: Array[Message] =>
-//        if (messages.nonEmpty && saveMessageId) {
-//          lastMessageStorage.set(Some(messages.head.messageId))(messages.head)
-//        }
-        println(s"Array ${messages.mkString("\n")}")
-      case any =>
-        println(s"Any $any")
-    }
+      }
 }
