@@ -3,9 +3,11 @@ package com.github.mmvpm.bot.state
 import com.github.mmvpm.bot.model.{Button, Draft, Tag, TgPhoto}
 import com.github.mmvpm.model.{Offer, OfferID}
 
+import scala.util.matching.Regex
+
 sealed trait State {
   def tag: Tag
-  def next: Seq[Tag]
+  def next: Seq[Seq[Tag]]
   def optPrevious: Option[State]
   def text: String
 }
@@ -40,15 +42,15 @@ object State {
   val ErrorTag: Tag = "error"
   val UnknownTag: Tag = "unknown"
 
-  def buttonBy(tag: Tag, state: State): Button =
+  def buttonBy(tag: Tag): Button =
     tag match {
-      case SearchTag  => "Найти товар"
-      case ListingTag => "На следующую страницу"
-//      case Listing.chooseOne(idx)  => state.asInstanceOf[Listing].get(idx.toInt).description.name
-      case CreateOfferNameTag => "Разместить объявление"
-      case CreatedOfferTag    => "Опубликовать объявление"
-      case MyOffersTag        => "Посмотреть мои объявления"
-//      case MyOffers.chooseOne(idx) => state.asInstanceOf[MyOffers].get(idx.toInt).description.name
+      case SearchTag               => "Найти товар"
+      case ListingTag              => "На следующую страницу"
+      case Listing.chooseOne(idx)  => s"${idx.toInt + 1}" // 1-based for user
+      case CreateOfferNameTag      => "Разместить объявление"
+      case CreatedOfferTag         => "Опубликовать объявление"
+      case MyOffersTag             => "Посмотреть мои объявления"
+      case MyOffers.chooseOne(idx) => s"${idx.toInt + 1}" // 1-based for user
       case EditOfferTag            => "Изменить это объявление"
       case EditOfferNameTag        => "Название"
       case EditOfferPriceTag       => "Цену"
@@ -103,9 +105,9 @@ object State {
   // sign-in & sign-up
 
   case class Registered(password: String) extends State with NoPrevious {
-    override def tag: Tag = RegisteredTag
-    override def next: Seq[Tag] = Seq(StartedTag)
-    override def text: String =
+    val tag: Tag = RegisteredTag
+    val next: Seq[Seq[Tag]] = Seq(Seq(StartedTag))
+    val text: String =
       s"""
         |Вы успешно зарегистрированы на платформе!
         |
@@ -114,22 +116,22 @@ object State {
   }
 
   case class LoggedIn(name: String) extends State with NoPrevious {
-    override def tag: Tag = LoggedInTag
-    override def next: Seq[Tag] = Seq(StartedTag)
-    override def text: String = s"Добро пожаловать, $name!"
+    val tag: Tag = LoggedInTag
+    val next: Seq[Seq[Tag]] = Seq(Seq(StartedTag))
+    val text: String = s"Добро пожаловать, $name!"
   }
 
   case object EnterPassword extends State with NoPrevious {
-    override def tag: Tag = EnterPasswordTag
-    override def next: Seq[Tag] = Seq.empty
-    override def text: String = "Пожалуйста, введите пароль, чтобы войти в свой профиль:"
+    val tag: Tag = EnterPasswordTag
+    val next: Seq[Seq[Tag]] = Seq.empty
+    val text: String = "Пожалуйста, введите пароль, чтобы войти в свой профиль:"
   }
 
   // beginning
 
   case object Started extends State with NoPrevious {
     val tag: Tag = StartedTag
-    val next: Seq[Tag] = Seq(SearchTag, CreateOfferNameTag, MyOffersTag)
+    val next: Seq[Seq[Tag]] = Seq(Seq(SearchTag), Seq(CreateOfferNameTag), Seq(MyOffersTag))
     val text: String = "Чем я могу вам помочь?"
   }
 
@@ -137,22 +139,24 @@ object State {
 
   case class Search(previous: State) extends State with WithPrevious {
     val tag: Tag = SearchTag
-    val next: Seq[Tag] = Seq(BackTag)
+    val next: Seq[Seq[Tag]] = Seq(Seq(BackTag))
     val text: String = "Введите поисковый запрос"
   }
 
   case class Listing(previous: State, offers: Seq[Offer], from: Int) extends State with WithPrevious with WithPhotos {
 
+    import Listing._
+
     val tag: Tag = ListingTag
 
-    val next: Seq[Tag] = nextPageTag /*++ offersTags*/ ++ Seq(BackTag, StartedTag)
+    val next: Seq[Seq[Tag]] = Seq(offersTags, Seq(BackTag) ++ nextPageTag, Seq(StartedTag))
 
     val text: String =
       if (offers.nonEmpty)
         s"""
           |$summary
           |
-          |Если хотите посмотреть одно объявление подробнее, напишите мне его ID
+          |С помощью кнопок от 1 до $StepSize можно выбрать одно объявление, чтобы посмотреть его подробнее
           |""".stripMargin
       else
         "По вашему запросу ничего не нашлось :("
@@ -162,8 +166,8 @@ object State {
         .slice(from, from + Listing.StepSize)
         .map(offer => TgPhoto.first(offer.photos))
 
-//    def get(idx: Int): Offer =
-//      offers.drop(idx).head
+    def get(idx: Int): Offer =
+      offers.drop(from + idx).head
 
     private lazy val nextPageTag =
       if (from + Listing.StepSize < offers.length)
@@ -171,13 +175,16 @@ object State {
       else
         Seq()
 
-//    private lazy val offersTags: Seq[Button] =
-//      (0 until StepSize).map(idx => s"$ListingTag-${from + idx}")
+    private lazy val offersTags: Seq[Tag] =
+      (0 until StepSize).map(idx => s"$ListingTag-$idx")
 
     private lazy val summary: String =
       offers
         .slice(from, from + Listing.StepSize)
-        .map(offer => s"- ${offer.description.name} (${offer.description.price} рублей)\n   ID: ${offer.id}")
+        .zipWithIndex
+        .map { case (offer, idx) =>
+          s"${idx + 1}. ${offer.description.name} (${offer.description.price} рублей)"
+        }
         .mkString("\n\n")
   }
 
@@ -185,7 +192,7 @@ object State {
 
     val StepSize = 5
 
-//    val chooseOne: Regex = s"$ListingTag-(\\d*)".r
+    val chooseOne: Regex = s"$ListingTag-(\\d*)".r
 
     def start(previous: State, offers: Seq[Offer]): Listing =
       Listing(previous: State, offers: Seq[Offer], from = 0)
@@ -193,7 +200,7 @@ object State {
 
   case class OneOffer(previous: State, offer: Offer) extends State with WithPrevious with WithPhotos {
     val tag: Tag = OneOfferTag
-    val next: Seq[Tag] = Seq(BackTag)
+    val next: Seq[Seq[Tag]] = Seq(Seq(BackTag))
 
     val text: String =
       s"""
@@ -214,39 +221,43 @@ object State {
 
   case class CreateOfferName(previous: State) extends State with WithPrevious {
     val tag: Tag = CreateOfferNameTag
-    val next: Seq[Tag] = Seq(BackTag)
+    val next: Seq[Seq[Tag]] = Seq(Seq(BackTag))
     val text: String = "Как будет называться ваше объявление?"
   }
 
   case class CreateOfferPrice(previous: State, draft: Draft) extends State with WithPrevious {
     val tag: Tag = CreateOfferPriceTag
-    val next: Seq[Tag] = Seq(BackTag)
+    val next: Seq[Seq[Tag]] = Seq(Seq(BackTag))
     val text: String = "Введите цену в рублях, за которую вы готовы продать"
   }
 
   case class CreateOfferDescription(previous: State, draft: Draft) extends State with WithPrevious {
     val tag: Tag = CreateOfferDescriptionTag
-    val next: Seq[Tag] = Seq(BackTag)
+    val next: Seq[Seq[Tag]] = Seq(Seq(BackTag))
     val text: String = "Добавьте описание к вашему объявлению"
   }
 
   case class CreateOfferPhoto(previous: State, draft: Draft) extends State with WithPrevious {
     val tag: Tag = CreateOfferPhotoTag
-    val next: Seq[Tag] = Seq(CreatedOfferTag, BackTag)
+    val next: Seq[Seq[Tag]] = Seq(Seq(CreatedOfferTag), Seq(BackTag))
     val text: String = "Добавьте одну или несколько фотографий"
   }
 
   case class CreatedOffer(previous: State, draft: Draft) extends State with WithPrevious {
     val tag: Tag = CreatedOfferTag
-    val next: Seq[Tag] = Seq(StartedTag)
+    val next: Seq[Seq[Tag]] = Seq(Seq(StartedTag))
     val text: String = s"Объявление размещено. Вы можете посмотреть его в разделе \"Мои объявления\""
   }
 
   // my offers
 
   case class MyOffers(previous: State, offers: Seq[Offer]) extends State with WithPrevious with WithPhotos {
+
+    import MyOffers._
+
     val tag: Tag = MyOffersTag
-    val next: Seq[Tag] = /*offersTags ++ */ Seq(BackTag)
+
+    val next: Seq[Seq[Tag]] = Seq(offersTags, Seq(BackTag))
 
     val text: String =
       if (summary.nonEmpty)
@@ -254,33 +265,44 @@ object State {
            |Все ваши объявления:
            |
            |$summary
+           |
+           |С помощью кнопок от 1 до $StepSize можно выбрать одно объявление, чтобы посмотреть его подробнее
            |""".stripMargin
       else
         "У вас пока что нет ни одного объявления"
 
     val photos: Seq[TgPhoto] =
-      offers.take(5).map(offer => TgPhoto.first(offer.photos))
+      offers
+        .take(StepSize)
+        .map(offer => TgPhoto.first(offer.photos))
 
-//    def get(idx: Int): Offer =
-//      offers.drop(idx).head
+    def get(idx: Int): Offer =
+      offers.drop(idx).head
 
-//    private lazy val offersTags: Seq[Button] =
-//      offers.indices.map(idx => s"$MyOffersTag-$idx")
+    private lazy val offersTags: Seq[Button] =
+      offers.indices.map(idx => s"$MyOffersTag-$idx")
 
     private lazy val summary: String =
       offers
-        .map(offer => s"- ${offer.description.name} (${offer.description.price} рублей)\n   ID: ${offer.id}")
+        .take(StepSize)
+        .zipWithIndex
+        .map { case (offer, idx) =>
+          s"${idx + 1}. ${offer.description.name} (${offer.description.price} рублей)"
+        }
         .mkString("\n\n")
   }
 
-//  object MyOffers {
-//    val chooseOne: Regex = s"$MyOffersTag-(\\d*)".r
-//  }
+  object MyOffers {
+
+    val StepSize = 5
+
+    val chooseOne: Regex = s"$MyOffersTag-(\\d*)".r
+  }
 
   case class MyOffer(previous: State, offer: Offer) extends State with WithPrevious with WithOfferID with WithPhotos {
     val offerId: OfferID = offer.id
     val tag: Tag = MyOfferTag
-    val next: Seq[Tag] = Seq(EditOfferTag, DeletedOfferTag, BackTag)
+    val next: Seq[Seq[Tag]] = Seq(Seq(EditOfferTag), Seq(DeletedOfferTag), Seq(BackTag))
 
     val text: String =
       s"""
@@ -301,45 +323,54 @@ object State {
 
   case class EditOffer(previous: State, offerId: OfferID) extends State with WithPrevious with WithOfferID {
     val tag: Tag = EditOfferTag
-    val next: Seq[Tag] =
-      Seq(EditOfferNameTag, EditOfferPriceTag, EditOfferDescriptionTag, AddOfferPhotoTag, DeleteOfferPhotosTag, BackTag)
+
+    val next: Seq[Seq[Tag]] =
+      Seq(
+        Seq(EditOfferNameTag),
+        Seq(EditOfferPriceTag),
+        Seq(EditOfferDescriptionTag),
+        Seq(AddOfferPhotoTag),
+        Seq(DeleteOfferPhotosTag),
+        Seq(BackTag)
+      )
+
     val text: String = "Что хотите поменять?"
   }
 
   case class EditOfferName(previous: State, offerId: OfferID) extends State with WithPrevious with WithOfferID {
     val tag: Tag = EditOfferNameTag
-    val next: Seq[Tag] = Seq(BackTag)
+    val next: Seq[Seq[Tag]] = Seq(Seq(BackTag))
     val text: String = "Введите новое название объявления"
   }
 
   case class EditOfferPrice(previous: State, offerId: OfferID) extends State with WithPrevious with WithOfferID {
     val tag: Tag = EditOfferPriceTag
-    val next: Seq[Tag] = Seq(BackTag)
+    val next: Seq[Seq[Tag]] = Seq(Seq(BackTag))
     val text: String = "Введите новую цену"
   }
 
   case class EditOfferDescription(previous: State, offerId: OfferID) extends State with WithPrevious with WithOfferID {
     val tag: Tag = EditOfferDescriptionTag
-    val next: Seq[Tag] = Seq(BackTag)
+    val next: Seq[Seq[Tag]] = Seq(Seq(BackTag))
     val text: String = "Введите новое описание к объявлению"
   }
 
   case class AddOfferPhoto(previous: State, offerId: OfferID) extends State with WithPrevious with WithOfferID {
     val tag: Tag = AddOfferPhotoTag
-    val next: Seq[Tag] = Seq(BackTag)
+    val next: Seq[Seq[Tag]] = Seq(Seq(BackTag))
     val text: String = "Загрузите фотографию"
   }
 
   case class UpdatedOffer(previous: State, text: String) extends State with WithPrevious {
     val tag: Tag = UpdatedOfferTag
-    val next: Seq[Tag] = Seq(BackTag)
+    val next: Seq[Seq[Tag]] = Seq(Seq(BackTag))
   }
 
   // delete my offer
 
   case class DeletedOffer(previous: State) extends State with WithPrevious {
     val tag: Tag = DeletedOfferTag
-    val next: Seq[Tag] = Seq(StartedTag)
+    val next: Seq[Seq[Tag]] = Seq(Seq(StartedTag))
     val text: String = "Объявление удалено"
   }
 
@@ -347,7 +378,7 @@ object State {
 
   case class Error(returnTo: State, message: String) extends State with NoPrevious {
     val tag: Tag = ErrorTag
-    val next: Seq[Tag] = Seq()
+    val next: Seq[Seq[Tag]] = Seq()
     val text: String = message
   }
 }

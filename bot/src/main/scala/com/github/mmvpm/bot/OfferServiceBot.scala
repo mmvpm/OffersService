@@ -5,14 +5,14 @@ import cats.implicits.{catsSyntaxApplicativeError, toFlatMapOps, toTraverseOps}
 import cats.syntax.functor._
 import com.bot4s.telegram.api.declarative.{Callbacks, Command, Commands}
 import com.bot4s.telegram.cats.{Polling, TelegramBot}
-import com.bot4s.telegram.methods.{Request, SendDice}
+import com.bot4s.telegram.methods.{DeleteMessage, Request, SendDice}
 import com.bot4s.telegram.models._
 import com.github.mmvpm.bot.client.telegram.TelegramClient
 import com.github.mmvpm.bot.client.telegram.request.{EditMessageMedia, SendMediaGroup}
 import com.github.mmvpm.bot.manager.ofs.OfsManager
 import com.github.mmvpm.bot.manager.ofs.error.OfsError.InvalidSession
 import com.github.mmvpm.bot.manager.ofs.response.LoginOrRegisterResponse
-import com.github.mmvpm.bot.model.MessageID
+import com.github.mmvpm.bot.model.{ChatID, MessageID}
 import com.github.mmvpm.bot.render.Renderer
 import com.github.mmvpm.bot.state.State._
 import com.github.mmvpm.bot.state.{State, StateManager, Storage}
@@ -104,24 +104,41 @@ class OfferServiceBot[F[_]: Concurrent](
         case my: EditMessageMedia => telegramClient.editMessageMedia(my).asInstanceOf[F[Any]]
         case req                  => request(req).asInstanceOf[F[Any]]
       }
-      .map {
-        _.map {
-          case deleted: Boolean =>
+      .map { results =>
+        reqs.zip(results).map {
+
+          case (req: DeleteMessage, deleted: Boolean) =>
+            val chatId = parseChatId(req.chatId)
+            val lastSentPhotos = lastPhotosStorage
+              .getRaw(chatId)
+              .getOrElse(Seq.empty)
+              .filter(_ != req.messageId)
+            lastPhotosStorage.setRaw(Some(lastSentPhotos))(chatId)
             println(s"Delete: $deleted")
-          case edited: Either[Boolean, Message] =>
+
+          case (_, edited: Either[Boolean, Message]) =>
             println(s"Edit $edited")
-          case sent: Message =>
+
+          case (_, sent: Message) =>
             if (saveMessageId) {
               lastMessageStorage.set(Some(sent.messageId))(sent)
             }
             println(s"Sent $sent")
-          case messages: Array[Message] =>
+
+          case (_, messages: Array[Message]) =>
             if (messages.nonEmpty && saveMessageId) {
               lastPhotosStorage.set(Some(messages.map(_.messageId)))(messages.head)
             }
             println(s"Array ${messages.mkString("\n")}")
-          case any =>
+
+          case (_, any) =>
             println(s"Any $any")
         }
       }
+
+  private def parseChatId(chatId: ChatId): ChatID =
+    chatId match {
+      case ChatId.Chat(id)   => id
+      case ChatId.Channel(_) => sys.error("channels are not supported")
+    }
 }
