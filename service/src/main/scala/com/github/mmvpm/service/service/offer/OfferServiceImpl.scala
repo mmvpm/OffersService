@@ -80,10 +80,10 @@ class OfferServiceImpl[F[_]: Monad: UUIDGen](offerDao: OfferDao[F]) extends Offe
       // TODO: should be optimized
       resultsPhraseName <- offerDao.searchPhraseName(query, limit)
       resultsPlainName <- offerDao.searchPlainName(query, limit)
-      resultsAnyWordsName <- offerDao.searchAnyWordsName(query.split(' '), limit)
+      resultsAnyWordsName <- offerDao.searchAnyWordsName(splitQuery(query), limit)
       resultsPhrase <- offerDao.searchPhrase(query, limit)
       resultsPlain <- offerDao.searchPlain(query, limit)
-      resultsAnyWords <- offerDao.searchAnyWords(query.split(' '), limit)
+      resultsAnyWords <- offerDao.searchAnyWords(splitQuery(query), limit)
       resultsAll = List(
         Random.shuffle(resultsPhraseName),
         Random.shuffle(resultsPlainName),
@@ -108,6 +108,9 @@ class OfferServiceImpl[F[_]: Monad: UUIDGen](offerDao: OfferDao[F]) extends Offe
       id <- UUIDGen[F].randomUUID
       photo = Photo(id, None, None, Some(telegramId))
     } yield photo
+
+  private def splitQuery(query: String): Seq[String] =
+    query.split("\\s+")
 }
 
 object OfferServiceImpl {
