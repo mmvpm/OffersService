@@ -16,9 +16,9 @@ class StateManagerImpl[F[_]: MonadCancelThrow](ofsManager: OfsManager[F]) extend
 
   override def getNextState(tag: String, current: State)(implicit message: Message): F[State] =
     tag match {
-      case SearchTag  => toSearch(current)
-      case ListingTag => toListing(current)
-//      case Listing.chooseOne(idx)    => toOneOfferIdx(current, idx.toInt)
+      case SearchTag                 => toSearch(current)
+      case ListingTag                => toListing(current)
+      case Listing.chooseOne(idx)    => toOneOfferIdx(current, idx.toInt)
       case OneOfferTag               => toOneOffer(current)
       case CreateOfferNameTag        => toCreateOfferName(current)
       case CreateOfferPriceTag       => toCreateOfferPrice(current)
@@ -26,19 +26,19 @@ class StateManagerImpl[F[_]: MonadCancelThrow](ofsManager: OfsManager[F]) extend
       case CreateOfferPhotoTag       => toCreateOfferPhoto(current)
       case CreatedOfferTag           => toCreatedOffer(current)
       case MyOffersTag               => toMyOffers(current)
-//      case MyOffers.chooseOne(idx)   => toMyOfferIdx(current, idx.toInt)
-      case MyOfferTag              => toMyOffer(current)
-      case EditOfferTag            => toEditOffer(current)
-      case EditOfferNameTag        => toEditOfferName(current)
-      case EditOfferPriceTag       => toEditOfferPrice(current)
-      case EditOfferDescriptionTag => toEditOfferDescription(current)
-      case AddOfferPhotoTag        => toAddOfferPhoto(current)
-      case DeleteOfferPhotosTag    => toDeleteOfferPhotos(current)
-      case UpdatedOfferTag         => toUpdatedOffer(current)
-      case DeletedOfferTag         => toDeleteOffer(current)
-      case LoggedInTag             => toLoggedIn(current)
-      case BackTag                 => toBack(current)
-      case StartedTag              => toStarted(current)
+      case MyOffers.chooseOne(idx)   => toMyOfferIdx(current, idx.toInt)
+      case MyOfferTag                => toMyOffer(current)
+      case EditOfferTag              => toEditOffer(current)
+      case EditOfferNameTag          => toEditOfferName(current)
+      case EditOfferPriceTag         => toEditOfferPrice(current)
+      case EditOfferDescriptionTag   => toEditOfferDescription(current)
+      case AddOfferPhotoTag          => toAddOfferPhoto(current)
+      case DeleteOfferPhotosTag      => toDeleteOfferPhotos(current)
+      case UpdatedOfferTag           => toUpdatedOffer(current)
+      case DeletedOfferTag           => toDeleteOffer(current)
+      case LoggedInTag               => toLoggedIn(current)
+      case BackTag                   => toBack(current)
+      case StartedTag                => toStarted(current)
     }
 
   // transitions
@@ -74,11 +74,11 @@ class StateManagerImpl[F[_]: MonadCancelThrow](ofsManager: OfsManager[F]) extend
     newState.getOrElse(Error(current, "К сожалению, такого id не существует! Попробуйте ещё раз")).pure
   }
 
-//  private def toOneOfferIdx(current: State, idx: Int)(implicit message: Message): F[State] =
-//    findPrevious[Listing](current) match {
-//      case Some(listing) => OneOffer(current, listing.get(idx)).pure
-//      case None          => Error(current, "Произошла ошибка! Попробуйте ещё раз или начните сначала").pure
-//    }
+  private def toOneOfferIdx(current: State, idx: Int)(implicit message: Message): F[State] =
+    findPrevious[Listing](current) match {
+      case Some(listing) => OneOffer(current, listing.get(idx)).pure
+      case None          => Error(current, "Произошла ошибка! Попробуйте ещё раз или начните сначала").pure
+    }
 
   private def toCreateOfferName(current: State)(implicit message: Message): F[State] =
     CreateOfferName(current).pure
@@ -160,11 +160,11 @@ class StateManagerImpl[F[_]: MonadCancelThrow](ofsManager: OfsManager[F]) extend
     }
   }
 
-//  private def toMyOfferIdx(current: State, idx: Int)(implicit message: Message): F[State] =
-//    findPrevious[MyOffers](current) match {
-//      case Some(myOffers) => MyOffer(current, myOffers.get(idx)).pure
-//      case None => Error(current, "Произошла ошибка! Попробуйте ещё раз или начните сначала").pure
-//    }
+  private def toMyOfferIdx(current: State, idx: Int)(implicit message: Message): F[State] =
+    findPrevious[MyOffers](current) match {
+      case Some(myOffers) => MyOffer(current, myOffers.get(idx)).pure
+      case None           => Error(current, "Произошла ошибка! Попробуйте ещё раз или начните сначала").pure
+    }
 
   private def toEditOffer(current: State)(implicit message: Message): F[State] =
     current match {

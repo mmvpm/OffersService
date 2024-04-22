@@ -14,11 +14,10 @@ class RendererImpl extends Renderer {
       editMessage: Option[MessageID] = None,
       photoIds: Option[Seq[MessageID]]
   )(implicit message: Message): Seq[Request[?]] = {
-
-    val buttons = state.next.map { tag =>
-      InlineKeyboardButton.callbackData(buttonBy(tag, state), tag)
-    }
-    val markup = Some(InlineKeyboardMarkup.singleColumn(buttons))
+    val buttons = state.next.map(_.map { tag =>
+      InlineKeyboardButton.callbackData(buttonBy(tag), tag)
+    })
+    val markup = Some(InlineKeyboardMarkup(buttons))
 
     lazy val send = SendMessage(message.source, state.text, replyMarkup = markup)
     lazy val edit = EditMessageText(Some(message.source), editMessage, text = state.text, replyMarkup = markup)
