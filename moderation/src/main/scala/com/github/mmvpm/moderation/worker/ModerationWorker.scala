@@ -36,7 +36,7 @@ object ModerationWorker extends Logging {
 
     private def one: F[Unit] =
       for {
-        offers <- ofsClient.getOffersByStatus(OfferStatus.OnModeration, BatchSize).value.map {
+        offers <- ofsClient.getOffersByStatus(OfferStatus.OnModeration, config.batchSize).value.map {
           case Left(error) =>
             log.error(s"Get offers with OnModeration status failed: $error")
             List.empty

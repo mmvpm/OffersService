@@ -12,5 +12,5 @@ object Config {
 
   case class RetryConfig(amount: Int, baseDelay: FiniteDuration)
 
-  case class WorkerConfig(delayWait: FiniteDuration, delayWork: FiniteDuration)
+  case class WorkerConfig(delayWait: FiniteDuration, delayWork: FiniteDuration, batchSize: Int)
 }
