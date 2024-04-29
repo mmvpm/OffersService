@@ -167,6 +167,18 @@ lazy val parsing = (project in file("parsing"))
     ).flatten
   )
 
+lazy val moderation = (project in file("moderation"))
+  .dependsOn(common)
+  .settings(
+    name := "moderation",
+    libraryDependencies ++= Seq(
+      circe,
+      pureconfig,
+      sttpClient,
+      catsRetry
+    ).flatten
+  )
+
 lazy val root = (project in file("."))
   .settings(
     name := "OffersService"

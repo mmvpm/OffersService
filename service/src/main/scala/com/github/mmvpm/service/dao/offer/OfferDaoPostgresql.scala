@@ -4,6 +4,7 @@ import cats.Monad
 import cats.data.{EitherT, NonEmptyList}
 import cats.effect.kernel.MonadCancelThrow
 import cats.implicits._
+import com.github.mmvpm.model.OfferStatus.OfferStatus
 import com.github.mmvpm.model._
 import com.github.mmvpm.service.dao.error._
 import com.github.mmvpm.service.dao.schema._
@@ -61,6 +62,17 @@ class OfferDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
       .attemptT
       .leftMap(error => InternalOfferDaoError(error.getMessage))
 
+  def getOffersByStatus(status: OfferStatus, limit: Int): EitherT[F, OfferDaoError, List[Offer]] =
+    (for {
+      offersEntries <- selectFromOffersByStatus(status, limit)
+      offers <- offersEntries.traverse { offersEntry =>
+        selectFromPhotos(offersEntry.id).map(offersEntry.toOffer)
+      }
+    } yield offers)
+      .transact(tr)
+      .attemptT
+      .leftMap(error => InternalOfferDaoError(error.getMessage))
+
   def createOffer(offer: Offer): EitherT[F, OfferDaoError, Unit] =
     insertOfferToAllTables(offer)
       .transact(tr)
@@ -69,6 +81,12 @@ class OfferDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
 
   def updateOffer(userId: UserID, offerId: OfferID, patch: OfferPatch): EitherT[F, OfferDaoError, Unit] =
     updateOffers(userId, offerId, patch)
+      .transact(tr)
+      .attemptT
+      .handleDefaultErrors
+
+  def updateOfferStatus(offerId: OfferID, newStatus: OfferStatus): EitherT[F, OfferDaoError, Unit] =
+    updateOffersSetStatus(offerId, newStatus)
       .transact(tr)
       .attemptT
       .handleDefaultErrors
@@ -191,6 +209,17 @@ class OfferDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
       .query[OffersEntry]
       .to[List]
 
+  private def selectFromOffersByStatus(status: OfferStatus, limit: Int): ConnectionIO[List[OffersEntry]] =
+    sql"""
+      select id, uo.user_id, name, price, description, status, source
+      from offers
+      join user_offers uo on offers.id = uo.offer_id
+      where offers.status = $status
+      limit $limit
+      """
+      .query[OffersEntry]
+      .to[List]
+
   private def insertIntoOffers(offer: Offer): ConnectionIO[Boolean] = {
     import offer._
     import description._
@@ -203,6 +232,9 @@ class OfferDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
   private def updateOffers(userId: UserID, offerId: OfferID, patch: OfferPatch): ConnectionIO[Boolean] =
     (fr"update offers set" ++ sqlByPatch(patch) ++
       fr"from user_offers uo where id = $offerId and uo.user_id = $userId").update.run.map(_ == 1)
+
+  private def updateOffersSetStatus(offerId: OfferID, newStatus: OfferStatus): ConnectionIO[Boolean] =
+    sql"update offers set status = $newStatus where id = $offerId".update.run.map(_ == 1)
 
   // queries: photos
 

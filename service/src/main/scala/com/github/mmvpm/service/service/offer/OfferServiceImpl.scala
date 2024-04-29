@@ -4,6 +4,7 @@ import cats.data.EitherT
 import cats.effect.std.UUIDGen
 import cats.implicits.{toFunctorOps, toTraverseOps}
 import cats.{Functor, Monad}
+import com.github.mmvpm.model.OfferStatus.OfferStatus
 import com.github.mmvpm.model._
 import com.github.mmvpm.service.api.error._
 import com.github.mmvpm.service.api.request._
@@ -36,10 +37,16 @@ class OfferServiceImpl[F[_]: Monad: UUIDGen](offerDao: OfferDao[F]) extends Offe
       .map(OffersResponse)
       .convertError
 
+  def getOffers(status: OfferStatus, limit: Int): EitherT[F, ApiError, OffersResponse] =
+    offerDao
+      .getOffersByStatus(status, limit)
+      .map(OffersResponse)
+      .convertError
+
   def createOffer(userId: UserID, request: CreateOfferRequest): EitherT[F, ApiError, OfferResponse] =
     (for {
       offerId <- EitherT.liftF(UUIDGen[F].randomUUID)
-      offer = Offer(offerId, userId, request.description, OfferStatus.Active, request.source, Seq.empty)
+      offer = Offer(offerId, userId, request.description, OfferStatus.OnModeration, request.source, Seq.empty)
       _ <- offerDao.createOffer(offer)
     } yield OfferResponse(offer)).convertError
 
@@ -52,6 +59,14 @@ class OfferServiceImpl[F[_]: Monad: UUIDGen](offerDao: OfferDao[F]) extends Offe
       .updateOffer(userId, offerId, OfferPatch.from(request))
       .flatMap(_ => offerDao.getOffer(offerId))
       .map(OfferResponse)
+      .convertError
+
+  def updateOfferStatus(request: UpdateOfferStatusBatchRequest): EitherT[F, ApiError, OkResponse] =
+    request.requests
+      .traverse { request =>
+        offerDao.updateOfferStatus(request.offerId, request.newStatus)
+      }
+      .as(OkResponse())
       .convertError
 
   def deleteOffer(userId: UserID, offerId: OfferID): EitherT[F, ApiError, OkResponse] =
