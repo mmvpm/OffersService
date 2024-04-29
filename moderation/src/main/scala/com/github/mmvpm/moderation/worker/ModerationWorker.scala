@@ -16,7 +16,7 @@ trait ModerationWorker[F[_]] {
 
 object ModerationWorker extends Logging {
 
-  private val BatchSize = 1000
+  private val BatchSize = 100
 
   def impl[F[_]: Temporal](
       ofsClient: OfsClient[F],
