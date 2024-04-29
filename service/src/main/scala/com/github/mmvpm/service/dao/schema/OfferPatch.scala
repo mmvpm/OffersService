@@ -1,6 +1,6 @@
 package com.github.mmvpm.service.dao.schema
 
-import com.github.mmvpm.model.Money
+import com.github.mmvpm.model.{Money, OfferStatus}
 import com.github.mmvpm.model.OfferStatus.OfferStatus
 import com.github.mmvpm.service.api.request.{UpdateOfferRequest, UpdateOfferStatusBatchRequest}
 
@@ -17,6 +17,7 @@ object OfferPatch {
     OfferPatch(
       request.name,
       request.price,
-      request.description
+      request.description,
+      Some(OfferStatus.OnModeration)
     )
 }
