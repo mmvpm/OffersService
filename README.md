@@ -109,3 +109,9 @@ And authorization separately:
 Parsing gets offers from youla.ru to fill in the contents of my service 
 
 <img src="docs/parsing-arch.png" width="600" alt="parsing-arch"/>
+
+### Moderation
+
+Moderation Worker requests all offers with the `OnModeration` status from the REST API (in batches, with some delay) and then updating offer statuses to Active or Banned if any violations are detected
+
+<img src="docs/moderation-arch.png" width="600" alt="moderation-arch"/>

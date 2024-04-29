@@ -55,9 +55,8 @@ class OfferHandler[F[_]: Applicative](offerService: OfferService[F], override va
       .in("api" / "v1" / "offer" / path[OfferID]("offer-id"))
       .in(jsonBody[UpdateOfferRequest])
       .out(jsonBody[OfferResponse])
-      .serverLogic(userId => {
-        case (offerId, request) =>
-          offerService.updateOffer(userId, offerId, request).value
+      .serverLogic(userId => { case (offerId, request) =>
+        offerService.updateOffer(userId, offerId, request).value
       })
 
   private val deleteOffer: ServerEndpoint[Any, F] =
@@ -73,9 +72,8 @@ class OfferHandler[F[_]: Applicative](offerService: OfferService[F], override va
       .in("api" / "v1" / "offer" / path[OfferID]("offer-id") / "photo")
       .in(jsonBody[AddOfferPhotosRequest])
       .out(jsonBody[OfferResponse])
-      .serverLogic(userId => {
-        case (offerId, request) =>
-          offerService.addPhotos(userId, offerId, request).value
+      .serverLogic(userId => { case (offerId, request) =>
+        offerService.addPhotos(userId, offerId, request).value
       })
 
   private val deleteAllOfferPhotos: ServerEndpoint[Any, F] =
