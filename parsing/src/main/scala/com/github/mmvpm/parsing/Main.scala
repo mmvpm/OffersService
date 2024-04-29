@@ -42,7 +42,7 @@ object Main extends IOApp with Logging {
       retryUtils: RetryUtils[IO] = new RetryUtilsImpl[IO](config.retry)
       youlaClient: YoulaClient[IO] = new YoulaClientSttp[IO](config.youla, sttpBackend)
       ofsClient: OfsClient[IO] = new OfsClientSttp[IO](config.ofs, sttpBackend)
-      ofsClientRetrying: OfsClient[IO] = new OfsClientRetrying(ofsClient, retryUtils)
+      ofsClientRetying: OfsClient[IO] = new OfsClientRetrying(ofsClient, retryUtils)
       youlaClientRetying: YoulaClient[IO] = new YoulaClientRetrying(youlaClient, retryUtils)
 
       pageParser: PageParser[IO] = new PageParserJsoup[IO](browser)
@@ -57,7 +57,7 @@ object Main extends IOApp with Logging {
           pageVisitedDao,
           pageQueueReader,
           pageParser,
-          ofsClientRetrying
+          ofsClientRetying
         )
       pageProducer: PageProducer[IO] =
         new PageProducerImpl[IO](
@@ -68,8 +68,7 @@ object Main extends IOApp with Logging {
           catalogConverter
         )
 
-      //      result <- IO.race(pageConsumer.run.value, pageProducer.run.value)
-      result <- IO.race(pageConsumer.run.value, IO.never[Either[String, Unit]]) // pageProducer.run.value)
+      result <- IO.race(pageConsumer.run.value, pageProducer.run.value)
       _ = result match {
         case Left(Left(error))  => log.error(s"Consumer failed: $error")
         case Right(Left(error)) => log.error(s"Producer failed: $error")
