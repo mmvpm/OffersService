@@ -3,6 +3,7 @@ package com.github.mmvpm.service.api.util
 import com.github.mmvpm.model.OfferStatus.OfferStatus
 import com.github.mmvpm.model.UserStatus.UserStatus
 import com.github.mmvpm.model._
+import com.github.mmvpm.service.api.request.UpdateOfferStatusBatchRequest._
 import com.github.mmvpm.service.api.request._
 import com.github.mmvpm.service.api.response._
 import io.circe._
@@ -38,6 +39,10 @@ case object CirceInstances {
   // requests
 
   implicit val codecUpdateOfferRequest: Codec[UpdateOfferRequest] = deriveCodec
+
+  implicit val codecUpdateOfferStatusRequest: Codec[UpdateOfferStatusRequest] = deriveCodec
+
+  implicit val codecUpdateOfferStatusBatchRequest: Codec[UpdateOfferStatusBatchRequest] = deriveCodec
 
   implicit val codecSignUpRequest: Codec[SignUpRequest] = deriveCodec
 

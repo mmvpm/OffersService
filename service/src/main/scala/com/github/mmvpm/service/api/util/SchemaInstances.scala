@@ -3,6 +3,7 @@ package com.github.mmvpm.service.api.util
 import com.github.mmvpm.model.OfferStatus.OfferStatus
 import com.github.mmvpm.model.UserStatus.UserStatus
 import com.github.mmvpm.model._
+import com.github.mmvpm.service.api.request.UpdateOfferStatusBatchRequest.UpdateOfferStatusRequest
 import com.github.mmvpm.service.api.request._
 import com.github.mmvpm.service.api.response._
 import sttp.tapir.Schema
@@ -43,6 +44,12 @@ object SchemaInstances {
 
   implicit val schemaUpdateOfferRequest: Schema[UpdateOfferRequest] =
     Schema.derived.description("Request to update the offer")
+
+  implicit val schemaUpdateOfferStatusRequest: Schema[UpdateOfferStatusRequest] =
+    Schema.derived.description("Request to update the offer status")
+
+  implicit val schemaUpdateOfferStatusBatchRequest: Schema[UpdateOfferStatusBatchRequest] =
+    Schema.derived.description("Request to update the offer status batch")
 
   implicit val schemaCreateOfferRequest: Schema[CreateOfferRequest] =
     Schema.derived.description("Request to create an offer")

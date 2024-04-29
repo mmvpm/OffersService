@@ -130,7 +130,7 @@ class OfsManagerImpl[F[_]: Monad](ofsClient: OfsClient[F], sessionStorage: Stora
   private def getMyOffers(session: Session): EitherT[F, OfsError, List[Offer]] =
     ofsClient
       .getMyOffers(session)
-      .map(_.offers.filter(_.status == OfferStatus.Active))
+      .map(_.offers.filter(_.status.isActive))
       .handleDefaultErrors
 
   private def createOffer(session: Session, description: OfferDescription): EitherT[F, OfsError, OfsOffer] =

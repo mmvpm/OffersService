@@ -2,7 +2,7 @@ package com.github.mmvpm.service.dao.schema
 
 import com.github.mmvpm.model.Money
 import com.github.mmvpm.model.OfferStatus.OfferStatus
-import com.github.mmvpm.service.api.request.UpdateOfferRequest
+import com.github.mmvpm.service.api.request.{UpdateOfferRequest, UpdateOfferStatusBatchRequest}
 
 case class OfferPatch(
     name: Option[String] = None,
