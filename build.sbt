@@ -175,7 +175,7 @@ lazy val moderation = (project in file("moderation"))
       circe,
       pureconfig,
       sttpClient,
-      catsRetry,
+      catsRetry
     ).flatten
   )
 
