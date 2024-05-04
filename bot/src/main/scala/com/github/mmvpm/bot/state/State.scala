@@ -147,6 +147,8 @@ object State {
 
     import Listing._
 
+    private val StepSizeCropped = scala.math.min(StepSize, offers.size - from)
+
     val tag: Tag = ListingTag
 
     val next: Seq[Seq[Tag]] = Seq(offersTags, Seq(BackTag) ++ nextPageTag, Seq(StartedTag))
@@ -156,31 +158,31 @@ object State {
         s"""
           |$summary
           |
-          |С помощью кнопок от 1 до $StepSize можно выбрать одно объявление, чтобы посмотреть его подробнее
+          |С помощью кнопок от 1 до $StepSizeCropped можно выбрать одно объявление, чтобы посмотреть его подробнее
           |""".stripMargin
       else
         "По вашему запросу ничего не нашлось :("
 
     val photos: Seq[TgPhoto] =
       offers
-        .slice(from, from + Listing.StepSize)
+        .slice(from, from + StepSizeCropped)
         .map(offer => TgPhoto.first(offer.photos))
 
     def get(idx: Int): Offer =
       offers.drop(from + idx).head
 
     private lazy val nextPageTag =
-      if (from + Listing.StepSize < offers.length)
+      if (from + StepSize < offers.length)
         Seq(ListingTag)
       else
         Seq()
 
     private lazy val offersTags: Seq[Tag] =
-      (0 until StepSize).map(idx => s"$ListingTag-$idx")
+      (0 until StepSizeCropped).map(idx => s"$ListingTag-$idx")
 
     private lazy val summary: String =
       offers
-        .slice(from, from + Listing.StepSize)
+        .slice(from, from + StepSizeCropped)
         .zipWithIndex
         .map { case (offer, idx) =>
           s"${idx + 1}. ${offer.description.name} (${offer.description.price} рублей)"
@@ -255,6 +257,8 @@ object State {
 
     import MyOffers._
 
+    private val StepSizeCropped = scala.math.min(StepSize, offers.size)
+
     val tag: Tag = MyOffersTag
 
     val next: Seq[Seq[Tag]] = Seq(offersTags, Seq(BackTag))
@@ -266,14 +270,14 @@ object State {
            |
            |$summary
            |
-           |С помощью кнопок от 1 до $StepSize можно выбрать одно объявление, чтобы посмотреть его подробнее
+           |С помощью кнопок от 1 до $StepSizeCropped можно выбрать одно объявление, чтобы посмотреть его подробнее
            |""".stripMargin
       else
         "У вас пока что нет ни одного объявления"
 
     val photos: Seq[TgPhoto] =
       offers
-        .take(StepSize)
+        .take(StepSizeCropped)
         .map(offer => TgPhoto.first(offer.photos))
 
     def get(idx: Int): Offer =
@@ -284,7 +288,7 @@ object State {
 
     private lazy val summary: String =
       offers
-        .take(StepSize)
+        .take(StepSizeCropped)
         .zipWithIndex
         .map { case (offer, idx) =>
           s"${idx + 1}. ${offer.description.name} (${offer.description.price} рублей)"
