@@ -41,7 +41,6 @@ object OfsClient {
       EitherT(response)
     }
 
-
     def updateOfferStatusBatch(newStatuses: List[(OfferID, OfferStatus)]): EitherT[F, OfsClientError, OkResponse] = {
       val requestUri = uri"${ofsConfig.baseUrl}/api/v1/offer/list/status"
       val body = UpdateOfferStatusBatchRequest.from(newStatuses)

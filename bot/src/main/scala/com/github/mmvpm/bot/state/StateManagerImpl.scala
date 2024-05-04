@@ -327,8 +327,8 @@ class StateManagerImpl[F[_]: MonadCancelThrow](ofsManager: OfsManager[F]) extend
   private def findPreviousListing(state: State): Option[Listing] =
     state match {
       case target: Listing => Some(target)
-      case Started => None
-      case _ => state.optPrevious.flatMap(findPreviousListing)
+      case Started         => None
+      case _               => state.optPrevious.flatMap(findPreviousListing)
     }
 
   private def safeRefreshOffers(current: State): F[State] =
