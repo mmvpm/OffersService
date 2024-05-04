@@ -32,13 +32,13 @@ class SessionDaoRedis[F[_]: Sync](redis: RedisClient, SessionExpirationSeconds: 
 
   private def redisGet(session: Session): EitherT[F, SessionDaoError, Option[String]] =
     safe(redis.get(session.toRedis)).leftMap { error =>
-      log.error(s"get user id by session $session from redis failed", error)
+      log.error(s"get user id by session $session from redis failed: $error")
       SessionGetFailedDaoError(session)
     }
 
   private def redisSet(userId: UserID, session: Session): EitherT[F, SessionDaoError, Boolean] =
     safe(redis.setex(session.toRedis, SessionExpirationSeconds, userId.toString)).leftMap { error =>
-      log.error(s"save session $session to redis failed", error)
+      log.error(s"save session $session to redis failed: $error")
       SessionSaveFailedDaoError(session)
     }
 }

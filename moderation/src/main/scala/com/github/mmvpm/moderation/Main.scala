@@ -28,7 +28,7 @@ object Main extends IOApp with Logging {
       moderationWorker = ModerationWorker.impl[IO](ofsClientRetrying, moderationService, config.worker)
 
       _ <- moderationWorker.run.recover { error =>
-        log.error(s"Moderation worker failed", error)
+        log.error(s"Moderation worker failed: $error")
       }
     } yield ExitCode.Success
 }
