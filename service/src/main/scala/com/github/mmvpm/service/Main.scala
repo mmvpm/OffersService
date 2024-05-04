@@ -59,7 +59,7 @@ object Main extends IOApp {
       _ <- server.build.use { server =>
         for {
           _ <- IO.println(s"SwaggerUI: http://localhost:${server.address.getPort}/docs")
-          _ <- IO.readLine
+          _ <- IO.never[Unit]
         } yield ()
       }
     } yield ExitCode.Success
