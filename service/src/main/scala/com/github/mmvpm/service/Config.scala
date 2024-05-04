@@ -10,4 +10,4 @@ case class PostgresqlConfig(url: String, user: String, password: String, poolSiz
 
 case class SessionConfig(expiration: FiniteDuration)
 
-case class RedisConfig(host: String, port: Int)
+case class RedisConfig(host: String, port: Int, password: Option[String])
