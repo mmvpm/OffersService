@@ -133,6 +133,7 @@ lazy val service = (project in file("service"))
   .dependsOn(common)
   .settings(
     name := "service",
+    Compile / run / fork := true,
     libraryDependencies ++= Seq(
       pureconfig,
       tapir,
