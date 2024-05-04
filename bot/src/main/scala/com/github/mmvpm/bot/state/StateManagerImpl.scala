@@ -75,7 +75,7 @@ class StateManagerImpl[F[_]: MonadCancelThrow](ofsManager: OfsManager[F]) extend
   }
 
   private def toOneOfferIdx(current: State, idx: Int)(implicit message: Message): F[State] =
-    findPrevious[Listing](current) match {
+    findPreviousListing(current) match {
       case Some(listing) => OneOffer(current, listing.get(idx)).pure
       case None          => Error(current, "Произошла ошибка! Попробуйте ещё раз или начните сначала").pure
     }
@@ -161,7 +161,7 @@ class StateManagerImpl[F[_]: MonadCancelThrow](ofsManager: OfsManager[F]) extend
   }
 
   private def toMyOfferIdx(current: State, idx: Int)(implicit message: Message): F[State] =
-    findPrevious[MyOffers](current) match {
+    findPreviousMyOffers(current) match {
       case Some(myOffers) => MyOffer(current, myOffers.get(idx)).pure
       case None           => Error(current, "Произошла ошибка! Попробуйте ещё раз или начните сначала").pure
     }
@@ -317,11 +317,18 @@ class StateManagerImpl[F[_]: MonadCancelThrow](ofsManager: OfsManager[F]) extend
       }
   }
 
-  private def findPrevious[T <: State](state: State): Option[T] =
+  private def findPreviousMyOffers(state: State): Option[MyOffers] =
     state match {
-      case target: T => Some(target)
-      case Started   => None
-      case _         => state.optPrevious.flatMap(s => findPrevious(s))
+      case target: MyOffers => Some(target)
+      case Started          => None
+      case _                => state.optPrevious.flatMap(findPreviousMyOffers)
+    }
+
+  private def findPreviousListing(state: State): Option[Listing] =
+    state match {
+      case target: Listing => Some(target)
+      case Started => None
+      case _ => state.optPrevious.flatMap(findPreviousListing)
     }
 
   private def safeRefreshOffers(current: State): F[State] =
