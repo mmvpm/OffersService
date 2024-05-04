@@ -27,13 +27,14 @@ import sttp.tapir.swagger.bundle.SwaggerInterpreter
 object Main extends IOApp {
 
   override def run(args: List[String]): IO[ExitCode] = {
-    val config = ConfigSource.default.loadOrThrow[Config]
+    val config = ConfigSource.resources(getConfigName(args)).loadOrThrow[Config]
     makeTransactor[IO](config.postgresql).use(runServer(config)(_))
   }
 
   private def runServer(config: Config)(implicit xa: Transactor[IO]): IO[ExitCode] =
     for {
       random <- Random.scalaUtilRandom[IO]
+
       redis = new RedisClient(config.redis.host, config.redis.port, secret = config.redis.password)
 
       offerDao: OfferDao[IO] = new OfferDaoPostgresql[IO]
@@ -75,4 +76,10 @@ object Main extends IOApp {
 
   private def swaggerBy[A](endpoints: List[ServerEndpoint[A, IO]]): List[ServerEndpoint[A, IO]] =
     SwaggerInterpreter().fromServerEndpoints[IO](endpoints, "offers-service", "1.0.0")
+
+  private def getConfigName(args: List[String]): String =
+    args match {
+      case "local" :: _ => "application-local.conf"
+      case _ => "application.conf"
+    }
 }
