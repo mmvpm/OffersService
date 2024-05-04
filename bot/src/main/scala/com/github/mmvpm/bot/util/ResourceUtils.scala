@@ -9,5 +9,5 @@ object ResourceUtils {
     Using(Source.fromFile(filename))(_.mkString).get
 
   def readTelegramToken(): String =
-    readFile("secret/telegram-token.txt")
+    readFile("secret/telegram-token.txt").trim
 }
