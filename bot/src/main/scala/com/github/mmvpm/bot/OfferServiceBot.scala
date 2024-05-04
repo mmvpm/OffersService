@@ -1,7 +1,7 @@
 package com.github.mmvpm.bot
 
 import cats.effect.Concurrent
-import cats.implicits.{catsSyntaxApplicativeError, toFlatMapOps, toTraverseOps}
+import cats.implicits.{catsSyntaxApplicativeId, toFlatMapOps, toTraverseOps}
 import cats.syntax.functor._
 import com.bot4s.telegram.api.declarative.{Callbacks, Command, Commands}
 import com.bot4s.telegram.cats.{Polling, TelegramBot}
@@ -17,6 +17,8 @@ import com.github.mmvpm.bot.render.Renderer
 import com.github.mmvpm.bot.state.State._
 import com.github.mmvpm.bot.state.{State, StateManager, Storage}
 import sttp.client3.SttpBackend
+
+import scala.util.Try
 
 class OfferServiceBot[F[_]: Concurrent](
     token: String,
@@ -35,25 +37,24 @@ class OfferServiceBot[F[_]: Concurrent](
 
   // user sent a message (text, image, etc) to the chat
   onMessage { implicit message =>
-    (command(message) match {
-      case Some(Command("roll", _))  => roll
-      case Some(Command("start", _)) => start
-      case Some(_)                   => fail
-      case None =>
-        getNextStateTag(stateStorage.get) match {
-          case UnknownTag => fail
-          case nextTag    => replyResolved(nextTag)
-        }
-    }).recover { error =>
-      logger.error("Bot failed on message", error)
-    }
+    safe(
+      command(message) match {
+        case Some(Command("roll", _))  => roll
+        case Some(Command("start", _)) => start
+        case Some(_)                   => fail
+        case None =>
+          getNextStateTag(stateStorage.get) match {
+            case UnknownTag => fail
+            case nextTag    => replyResolved(nextTag)
+          }
+      },
+      ().pure
+    )
   }
 
   // user pressed the button
   onCallbackQuery { implicit cq =>
-    replyResolved(cq.data.get)(cq.message.get).recover { error =>
-      logger.error("Bot failed on callback query", error)
-    }
+    safe(replyResolved(cq.data.get)(cq.message.get), ().pure)
   }
 
   // scenarios
@@ -86,16 +87,13 @@ class OfferServiceBot[F[_]: Concurrent](
       _ <- requestLogged(replies)
     } yield ()
 
-  private def fail(implicit message: Message): F[Unit] =
-    reply("Не понял вас :(").void
-
-  // internal
-
   private def withoutError(state: State): State =
     state match {
       case Error(returnTo, _) => returnTo
       case _                  => state
     }
+
+  // internal
 
   private def requestLogged(reqs: Seq[Request[?]], saveMessageId: Boolean = true): F[Unit] =
     reqs
@@ -141,4 +139,15 @@ class OfferServiceBot[F[_]: Concurrent](
       case ChatId.Chat(id)   => id
       case ChatId.Channel(_) => sys.error("channels are not supported")
     }
+
+  private def fail(implicit message: Message): F[Unit] =
+    reply("Не понял вас :(").void
+
+  private def safe[A](block: => A, default: A): A =
+    Try {
+      block
+    }.recover { error =>
+      logger.error("Bot failed", error)
+      default
+    }.get
 }
