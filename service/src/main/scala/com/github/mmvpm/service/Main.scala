@@ -34,7 +34,7 @@ object Main extends IOApp {
   private def runServer(config: Config)(implicit xa: Transactor[IO]): IO[ExitCode] =
     for {
       random <- Random.scalaUtilRandom[IO]
-      redis = new RedisClient(config.redis.host, config.redis.port)
+      redis = new RedisClient(config.redis.host, config.redis.port, secret = config.redis.password)
 
       offerDao: OfferDao[IO] = new OfferDaoPostgresql[IO]
       sessionDao: SessionDao[IO] = new SessionDaoRedis[IO](redis, config.session.expiration.toSeconds)
@@ -56,7 +56,7 @@ object Main extends IOApp {
 
       _ <- server.build.use { server =>
         for {
-          _ <- IO.println(s"SwaggerUI: http://${server.address.getHostName}:${server.address.getPort}/docs")
+          _ <- IO.println(s"SwaggerUI: http://localhost:${server.address.getPort}/docs")
           _ <- IO.readLine
         } yield ()
       }
