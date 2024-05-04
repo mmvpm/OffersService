@@ -147,6 +147,7 @@ lazy val bot = (project in file("bot"))
   .dependsOn(common)
   .settings(
     name := "bot",
+    Compile / run / fork := true,
     libraryDependencies ++= Seq(
       bot4s,
       sttpClient,
@@ -172,6 +173,7 @@ lazy val moderation = (project in file("moderation"))
   .dependsOn(common)
   .settings(
     name := "moderation",
+    Compile / run / fork := true,
     libraryDependencies ++= Seq(
       circe,
       pureconfig,
