@@ -4,7 +4,7 @@ import scala.concurrent.duration.FiniteDuration
 
 case class Config(redis: RedisConfig, ofs: OfsConfig, youla: YoulaConfig, retry: RetryConfiguration)
 
-case class RedisConfig(host: String, port: Int)
+case class RedisConfig(host: String, port: Int, password: Option[String])
 
 case class OfsConfig(baseUrl: String, requestTimeout: FiniteDuration)
 

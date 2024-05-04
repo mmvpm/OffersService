@@ -13,6 +13,7 @@ import com.github.mmvpm.service.dao.util.Postgresql.makeTransactor
 import com.github.mmvpm.service.service.auth.{AuthService, AuthServiceImpl}
 import com.github.mmvpm.service.service.offer.{OfferService, OfferServiceImpl}
 import com.github.mmvpm.service.service.user.{UserService, UserServiceImpl}
+import com.github.mmvpm.util.ConfigUtils.configByStage
 import com.redis.RedisClient
 import doobie.Transactor
 import org.http4s.HttpRoutes
@@ -27,7 +28,7 @@ import sttp.tapir.swagger.bundle.SwaggerInterpreter
 object Main extends IOApp {
 
   override def run(args: List[String]): IO[ExitCode] = {
-    val config = ConfigSource.resources(getConfigName(args)).loadOrThrow[Config]
+    val config = ConfigSource.resources(configByStage(args)).loadOrThrow[Config]
     makeTransactor[IO](config.postgresql).use(runServer(config)(_))
   }
 
@@ -76,10 +77,4 @@ object Main extends IOApp {
 
   private def swaggerBy[A](endpoints: List[ServerEndpoint[A, IO]]): List[ServerEndpoint[A, IO]] =
     SwaggerInterpreter().fromServerEndpoints[IO](endpoints, "offers-service", "1.0.0")
-
-  private def getConfigName(args: List[String]): String =
-    args match {
-      case "local" :: _ => "application-local.conf"
-      case _ => "application.conf"
-    }
 }

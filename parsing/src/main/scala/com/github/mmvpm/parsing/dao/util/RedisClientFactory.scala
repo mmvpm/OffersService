@@ -6,5 +6,5 @@ import com.redis.RedisClient
 class RedisClientFactory(redisConfig: RedisConfig) {
 
   def newInstance(): RedisClient =
-    new RedisClient(redisConfig.host, redisConfig.port)
+    new RedisClient(redisConfig.host, redisConfig.port, secret = redisConfig.password)
 }

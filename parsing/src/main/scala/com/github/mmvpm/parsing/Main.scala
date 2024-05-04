@@ -14,6 +14,7 @@ import com.github.mmvpm.parsing.producer.catalog.{CatalogConverter, CatalogConve
 import com.github.mmvpm.parsing.producer.query.{QueryGenerator, QueryGeneratorFromSeq}
 import com.github.mmvpm.parsing.producer.{PageProducer, PageProducerImpl}
 import com.github.mmvpm.parsing.util.ResourcesUtils.unsafeReadLines
+import com.github.mmvpm.util.ConfigUtils.configByStage
 import com.github.mmvpm.util.Logging
 import net.ruippeixotog.scalascraper.browser._
 import pureconfig.ConfigSource
@@ -24,7 +25,7 @@ import sttp.client3.httpclient.cats.HttpClientCatsBackend
 object Main extends IOApp with Logging {
 
   override def run(args: List[String]): IO[ExitCode] = {
-    val config = ConfigSource.default.loadOrThrow[Config]
+    val config = ConfigSource.resources(configByStage(args)).loadOrThrow[Config]
     HttpClientCatsBackend.resource[IO]().use(runParser(config, _)).as(ExitCode.Success)
   }
 

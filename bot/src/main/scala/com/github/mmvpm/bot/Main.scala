@@ -1,7 +1,7 @@
 package com.github.mmvpm.bot
 
 import cats.effect.std.Random
-import cats.effect.{IO, IOApp}
+import cats.effect.{ExitCode, IO, IOApp}
 import com.github.mmvpm.bot.client.ofs.{OfsClient, OfsClientSttp}
 import com.github.mmvpm.bot.client.telegram.{TelegramClient, TelegramClientSttp}
 import com.github.mmvpm.bot.manager.ofs.{OfsManager, OfsManagerImpl}
@@ -10,19 +10,20 @@ import com.github.mmvpm.bot.render.{Renderer, RendererImpl}
 import com.github.mmvpm.bot.state.{State, StateManager, StateManagerImpl, StorageImpl}
 import com.github.mmvpm.bot.util.ResourceUtils
 import com.github.mmvpm.model.Session
+import com.github.mmvpm.util.ConfigUtils.configByStage
 import org.asynchttpclient.Dsl.asyncHttpClient
 import pureconfig.ConfigSource
 import pureconfig.generic.auto._
 import sttp.client3.asynchttpclient.cats.AsyncHttpClientCatsBackend
 
-object Main extends IOApp.Simple {
+object Main extends IOApp {
 
-  override def run: IO[Unit] =
+  override def run(args: List[String]): IO[ExitCode] =
     for {
       random <- Random.scalaUtilRandom[IO]
 
       token = ResourceUtils.readTelegramToken()
-      config = ConfigSource.default.loadOrThrow[Config]
+      config = ConfigSource.resources(configByStage(args)).loadOrThrow[Config]
 
       sttpBackend = AsyncHttpClientCatsBackend.usingClient[IO](asyncHttpClient)
 
@@ -51,5 +52,6 @@ object Main extends IOApp.Simple {
       )
 
       _ <- bot.startPolling()
-    } yield ()
+
+    } yield ExitCode.Success
 }

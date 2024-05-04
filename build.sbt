@@ -183,4 +183,4 @@ lazy val root = (project in file("."))
   .settings(
     name := "OffersService"
   )
-  .aggregate(common, service, bot, parsing)
+  .aggregate(common, service, bot, parsing, moderation)

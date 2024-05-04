@@ -2,22 +2,37 @@
 
 ## How to launch
 
-First of all, you need to launch PostgreSQL and Redis:
+Run one of the sbt commands below to start the selected component locally with connection to other services in the Cloud.  
+
+```bash
+sbt "project service" run
+sbt "project bot" run
+sbt "project moderation" run
+sbt "project parsing" run
+```
+
+For example, `sbt "project service" run` will launch the REST API locally, but it will send requests to PostgreSQL and Redis in the Cloud 
+
+### Using Docker
+
+To run the service completely locally, first of all, you need to launch PostgreSQL and Redis:
 
 ```bash
 docker compose start
 ```
 
-Then, start the REST-api:
+Then, start the REST-api with "local" parameter:
 
 ```bash
-sbt "project service" run 
+sbt "project service" run local
 ```
 
-And finally, run the telegram bot:
+Then start other components with the same parameter:
 
 ```bash
-sbt "project bot" run 
+sbt "project bot" run local
+sbt "project moderation" run local
+sbt "project parsing" run local
 ```
 
 ## Internals

@@ -5,6 +5,7 @@ import com.github.mmvpm.moderation.client.ofs.{OfsClient, OfsClientRetrying}
 import com.github.mmvpm.moderation.client.util.RetryUtils
 import com.github.mmvpm.moderation.service.ModerationService
 import com.github.mmvpm.moderation.worker.ModerationWorker
+import com.github.mmvpm.util.ConfigUtils.configByStage
 import com.github.mmvpm.util.Logging
 import org.asynchttpclient.Dsl.asyncHttpClient
 import pureconfig.ConfigSource
@@ -17,7 +18,7 @@ object Main extends IOApp with Logging {
     for {
       _ <- IO.println("Moderation worker started")
 
-      config = ConfigSource.default.loadOrThrow[Config]
+      config = ConfigSource.resources(configByStage(args)).loadOrThrow[Config]
 
       sttpBackend = AsyncHttpClientCatsBackend.usingClient[IO](asyncHttpClient)
       retryUtils = RetryUtils.impl[IO](config.retry)
