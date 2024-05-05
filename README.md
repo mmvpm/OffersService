@@ -1,5 +1,11 @@
 # OffersService
 
+## Overview
+
+The classified platform such as Craigslist or Avito that provides the opportunity for peer-to-peer exchanges of goods and services.
+
+<img src="docs/overview-arch.png" width="600" alt="overview-arch"/>
+
 ## How to launch
 
 Run one of the sbt commands below to start the selected component locally with connection to other services in the Cloud.  
