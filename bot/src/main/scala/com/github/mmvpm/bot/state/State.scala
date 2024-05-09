@@ -2,7 +2,7 @@ package com.github.mmvpm.bot.state
 
 import com.github.mmvpm.bot.model.{Button, Draft, Tag, TgPhoto}
 import com.github.mmvpm.bot.util.PriceUtils.priceText
-import com.github.mmvpm.model.{Offer, OfferID}
+import com.github.mmvpm.model.{Offer, OfferID, OfferStatus}
 
 import scala.util.matching.Regex
 
@@ -298,7 +298,11 @@ object State {
         .take(StepSizeCropped)
         .zipWithIndex
         .map { case (offer, idx) =>
-          s"${idx + 1}. ${offer.description.name} (${priceText(offer.description.price)})"
+          val statusText = offer.status match {
+            case OfferStatus.Banned => " [ЗАБАНЕНО]"
+            case _                  => ""
+          }
+          s"${idx + 1}. ${offer.description.name} (${priceText(offer.description.price)}) $statusText"
         }
         .mkString("\n\n")
   }

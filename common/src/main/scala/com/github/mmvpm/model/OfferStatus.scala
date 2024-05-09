@@ -9,9 +9,15 @@ object OfferStatus extends Enumeration {
   val Deleted = Value("Deleted")
 
   implicit class RichStatus(status: OfferStatus) {
+
     def isActive: Boolean = status match {
       case Active | OnModeration => true
       case Banned | Deleted      => false
+    }
+
+    def visibleToOwner: Boolean = status match {
+      case Deleted => false
+      case _       => true
     }
   }
 }
