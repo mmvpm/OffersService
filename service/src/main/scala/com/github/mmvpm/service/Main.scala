@@ -4,7 +4,9 @@ import cats.data.EitherT
 import cats.effect.std.Random
 import cats.effect.{ExitCode, IO, IOApp}
 import com.comcast.ip4s.{Host, Port}
+import com.github.mmvpm.secret.{SecretService, SecretServiceImpl}
 import com.github.mmvpm.service.api.{AuthHandler, OfferHandler, UserHandler}
+import com.github.mmvpm.service.config.{Config, ConfigLoader}
 import com.github.mmvpm.service.dao.offer.{OfferDao, OfferDaoPostgresql}
 import com.github.mmvpm.service.dao.session.{SessionDao, SessionDaoRedis}
 import com.github.mmvpm.service.dao.user.{UserDao, UserDaoPostgresql}
@@ -19,8 +21,6 @@ import doobie.Transactor
 import org.http4s.HttpRoutes
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.Router
-import pureconfig.ConfigSource
-import pureconfig.generic.auto._
 import sttp.tapir.server.ServerEndpoint
 import sttp.tapir.server.http4s.Http4sServerInterpreter
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
@@ -28,15 +28,20 @@ import sttp.tapir.swagger.bundle.SwaggerInterpreter
 object Main extends IOApp {
 
   override def run(args: List[String]): IO[ExitCode] = {
-    val config = ConfigSource.resources(configByStage(args)).loadOrThrow[Config]
-    makeTransactor[IO](config.postgresql).use(runServer(config)(_))
+    val secrets = new SecretServiceImpl[IO]
+    val configLoader = ConfigLoader.impl[IO](secrets)
+    for {
+      config <- configLoader.load(configByStage(args))
+      exitCode <- makeTransactor[IO](config.postgresql).use(runServer(config, secrets)(_))
+    } yield exitCode
   }
 
-  private def runServer(config: Config)(implicit xa: Transactor[IO]): IO[ExitCode] =
+  private def runServer(config: Config, secrets: SecretService[IO])(implicit xa: Transactor[IO]): IO[ExitCode] =
     for {
       random <- Random.scalaUtilRandom[IO]
 
-      redis = new RedisClient(config.redis.host, config.redis.port, secret = config.redis.password)
+      redisPassword <- secrets.redisPassword
+      redis = new RedisClient(config.redis.host, config.redis.port, secret = redisPassword)
 
       offerDao: OfferDao[IO] = new OfferDaoPostgresql[IO]
       sessionDao: SessionDao[IO] = new SessionDaoRedis[IO](redis, config.session.expiration.toSeconds)

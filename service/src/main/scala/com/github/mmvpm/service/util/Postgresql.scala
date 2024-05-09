@@ -2,7 +2,7 @@ package com.github.mmvpm.service.util
 
 import cats.effect.{Async, Resource}
 import cats.implicits.catsSyntaxOptionId
-import com.github.mmvpm.service.PostgresqlConfig
+import com.github.mmvpm.service.config.PostgresqlConfig
 import doobie.hikari.{Config, HikariTransactor}
 import doobie.util.ExecutionContexts
 
@@ -13,7 +13,7 @@ object Postgresql {
     val hikariConfig = Config(
       jdbcUrl = conf.url.some,
       username = conf.user.some,
-      password = conf.password.some,
+      password = conf.password,
       maximumPoolSize = conf.poolSize.some,
       driverClassName = "org.postgresql.Driver".some
     )

@@ -1,4 +1,4 @@
-package com.github.mmvpm.service
+package com.github.mmvpm.service.config
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -6,7 +6,7 @@ case class Config(server: ServerConfig, session: SessionConfig, postgresql: Post
 
 case class ServerConfig(host: String, port: Int)
 
-case class PostgresqlConfig(url: String, user: String, password: String, poolSize: Int)
+case class PostgresqlConfig(url: String, user: String, password: Option[String], poolSize: Int)
 
 case class SessionConfig(expiration: FiniteDuration)
 

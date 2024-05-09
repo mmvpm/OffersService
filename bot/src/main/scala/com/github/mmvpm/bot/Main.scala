@@ -8,8 +8,8 @@ import com.github.mmvpm.bot.manager.ofs.{OfsManager, OfsManagerImpl}
 import com.github.mmvpm.bot.model.MessageID
 import com.github.mmvpm.bot.render.{Renderer, RendererImpl}
 import com.github.mmvpm.bot.state.{State, StateManager, StateManagerImpl, StorageImpl}
-import com.github.mmvpm.bot.util.ResourceUtils
 import com.github.mmvpm.model.Session
+import com.github.mmvpm.secret.{SecretService, SecretServiceImpl}
 import com.github.mmvpm.util.ConfigUtils.configByStage
 import org.asynchttpclient.Dsl.asyncHttpClient
 import pureconfig.ConfigSource
@@ -22,7 +22,9 @@ object Main extends IOApp {
     for {
       random <- Random.scalaUtilRandom[IO]
 
-      token = ResourceUtils.readTelegramToken()
+      secrets: SecretService[IO] = new SecretServiceImpl[IO]
+      token <- secrets.telegramToken.map(_.get)
+
       config = ConfigSource.resources(configByStage(args)).loadOrThrow[Config]
 
       sttpBackend = AsyncHttpClientCatsBackend.usingClient[IO](asyncHttpClient)
