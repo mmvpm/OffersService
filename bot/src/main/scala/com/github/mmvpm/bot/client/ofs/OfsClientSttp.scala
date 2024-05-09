@@ -9,7 +9,7 @@ import com.github.mmvpm.bot.client.ofs.request._
 import com.github.mmvpm.bot.client.ofs.response._
 import com.github.mmvpm.bot.client.ofs.util.CirceInstances._
 import com.github.mmvpm.bot.model.{OfferPatch, TgPhoto}
-import com.github.mmvpm.model.{OfferDescription, OfferID, Session}
+import com.github.mmvpm.model.{OfferDescription, OfferID, Session, UserID}
 import io.circe.Error
 import io.circe.generic.auto._
 import sttp.client3._
@@ -199,6 +199,20 @@ class OfsClientSttp[F[_]: MonadThrow](ofsConfig: OfsConfig, sttpBackend: SttpBac
       .delete(requestUri)
       .header(SessionHeaderName, session.toString)
       .response(asJsonEither[OfsApiClientError, OkResponse])
+      .readTimeout(ofsConfig.requestTimeout)
+      .send(sttpBackend)
+      .map(_.body.leftMap(parseFailure))
+      .recover(error => Left(OfsUnknownClientError(error.getMessage)))
+
+    EitherT(response)
+  }
+
+  def getUser(userId: UserID): EitherT[F, OfsClientError, UserResponse] = {
+    val requestUri = uri"${ofsConfig.baseUrl}/api/v1/user/$userId"
+
+    val response = basicRequest
+      .get(requestUri)
+      .response(asJsonEither[OfsApiClientError, UserResponse])
       .readTimeout(ofsConfig.requestTimeout)
       .send(sttpBackend)
       .map(_.body.leftMap(parseFailure))

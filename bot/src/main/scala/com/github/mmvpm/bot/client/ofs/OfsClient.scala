@@ -4,7 +4,7 @@ import cats.data.EitherT
 import com.github.mmvpm.bot.client.ofs.error.OfsClientError
 import com.github.mmvpm.bot.client.ofs.response._
 import com.github.mmvpm.bot.model.{OfferPatch, TgPhoto}
-import com.github.mmvpm.model.{OfferDescription, OfferID, Session}
+import com.github.mmvpm.model.{OfferDescription, OfferID, Session, UserID}
 
 trait OfsClient[F[_]] {
 
@@ -21,4 +21,6 @@ trait OfsClient[F[_]] {
   def deleteOffer(session: Session, offerId: OfferID): EitherT[F, OfsClientError, OkResponse]
   def addPhotos(session: Session, offerId: OfferID, photos: Seq[TgPhoto]): EitherT[F, OfsClientError, OfferResponse]
   def deleteAllPhotos(session: Session, offerId: OfferID): EitherT[F, OfsClientError, OkResponse]
+
+  def getUser(userId: UserID): EitherT[F, OfsClientError, UserResponse]
 }

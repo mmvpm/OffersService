@@ -1,8 +1,8 @@
 package com.github.mmvpm.bot.state
 
-import com.github.mmvpm.bot.model.{Button, Draft, Tag, TgPhoto}
+import com.github.mmvpm.bot.model.{Button, Draft, FullOffer, Tag, TgPhoto}
 import com.github.mmvpm.bot.util.PriceUtils.priceText
-import com.github.mmvpm.model.{Offer, OfferID, OfferStatus}
+import com.github.mmvpm.model.{Offer, OfferID, OfferStatus, User}
 
 import scala.util.matching.Regex
 
@@ -144,7 +144,10 @@ object State {
     val text: String = "Введите поисковый запрос"
   }
 
-  case class Listing(previous: State, offers: Seq[Offer], from: Int) extends State with WithPrevious with WithPhotos {
+  case class Listing(previous: State, offers: Seq[FullOffer], from: Int)
+      extends State
+      with WithPrevious
+      with WithPhotos {
 
     import Listing._
 
@@ -170,9 +173,9 @@ object State {
     val photos: Seq[TgPhoto] =
       offers
         .slice(from, from + StepSizeCropped)
-        .map(offer => TgPhoto.first(offer.photos))
+        .map(offer => TgPhoto.first(offer.offer.photos))
 
-    def get(idx: Int): Offer =
+    def get(idx: Int): FullOffer =
       offers.drop(from + idx).head
 
     private lazy val nextPageTag =
@@ -189,7 +192,7 @@ object State {
         .slice(from, from + StepSizeCropped)
         .zipWithIndex
         .map { case (offer, idx) =>
-          s"${idx + 1}. ${offer.description.name} (${priceText(offer.description.price)})"
+          s"${idx + 1}. ${offer.offer.description.name} (${priceText(offer.offer.description.price)})"
         }
         .mkString("\n\n")
   }
@@ -200,27 +203,33 @@ object State {
 
     val chooseOne: Regex = s"$ListingTag-(\\d*)".r
 
-    def start(previous: State, offers: Seq[Offer]): Listing =
-      Listing(previous: State, offers: Seq[Offer], from = 0)
+    def start(previous: State, offers: Seq[FullOffer]): Listing =
+      Listing(previous, offers, from = 0)
   }
 
-  case class OneOffer(previous: State, offer: Offer) extends State with WithPrevious with WithPhotos {
+  case class OneOffer(previous: State, offer: FullOffer) extends State with WithPrevious with WithPhotos {
     val tag: Tag = OneOfferTag
     val next: Seq[Seq[Tag]] = Seq(Seq(BackTag))
 
     val text: String =
       s"""
-        |${offer.description.name}
+        |${offer.offer.description.name}
         |
-        |Цена: ${priceText(offer.description.price)}
+        |Цена: ${priceText(offer.offer.description.price)}
         |
-        |${offer.description.text}
+        |${offer.offer.description.text}
         |
-        |Источник: ${offer.source.getOrElse("Размещено через telegram-bot")}
+        |$source
         |""".stripMargin
 
     val photos: Seq[TgPhoto] =
-      offer.photos.take(5).map(TgPhoto.from)
+      offer.offer.photos.take(5).map(TgPhoto.from)
+
+    private lazy val source =
+      offer.offer.source match {
+        case Some(source) => s"Источник: $source"
+        case None         => s"Продавец: ${offer.user.name} (@${offer.user.login})"
+      }
   }
 
   // create offer

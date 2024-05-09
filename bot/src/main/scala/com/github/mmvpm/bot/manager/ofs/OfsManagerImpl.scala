@@ -13,10 +13,12 @@ import com.github.mmvpm.bot.manager.ofs.error.OfsError
 import com.github.mmvpm.bot.manager.ofs.error.OfsError._
 import com.github.mmvpm.bot.manager.ofs.response.LoginOrRegisterResponse
 import com.github.mmvpm.bot.manager.ofs.response.LoginOrRegisterResponse._
-import com.github.mmvpm.bot.model.{OfferPatch, TgPhoto}
+import com.github.mmvpm.bot.model.{FullOffer, OfferPatch, TgPhoto}
 import com.github.mmvpm.bot.state.Storage
 import com.github.mmvpm.model._
 import sttp.model.StatusCode
+
+import java.util.UUID
 
 class OfsManagerImpl[F[_]: Monad](ofsClient: OfsClient[F], sessionStorage: Storage[Option[Session]], random: Random[F])
     extends OfsManager[F] {
@@ -36,11 +38,18 @@ class OfsManagerImpl[F[_]: Monad](ofsClient: OfsClient[F], sessionStorage: Stora
       case Some(session) => checkSession(session).as(LoggedIn(getName))
     }
 
-  def search(query: String): EitherT[F, OfsError, List[Offer]] =
+  def search(query: String): EitherT[F, OfsError, List[FullOffer]] =
     (for {
       offerIds <- ofsClient.search(query).map(_.offerIds)
       offers <- ofsClient.getOffers(offerIds).map(_.offers)
-    } yield offers).handleDefaultErrors
+      fullOffers <- offers.traverse { offer =>
+        if (offer.source.isEmpty) {
+          ofsClient.getUser(offer.userId).map(u => FullOffer(offer, u.user))
+        } else {
+          EitherT.pure[F, OfsClientError](FullOffer(offer, ParsedUser))
+        }
+      }
+    } yield fullOffers).handleDefaultErrors
 
   def getOffer(offerId: OfferID): EitherT[F, OfsError, Option[Offer]] =
     ofsClient
@@ -167,6 +176,13 @@ class OfsManagerImpl[F[_]: Monad](ofsClient: OfsClient[F], sessionStorage: Stora
 object OfsManagerImpl {
 
   private val PasswordLength = 10
+
+  private val ParsedUser = User(
+    id = UUID.fromString("3fa85f64-5717-4562-b3fc-2c963f66afa6"),
+    name = "Parsed from youla.ru",
+    login = "@parsed",
+    status = UserStatus.Active
+  )
 
   implicit class RichClientResponse[F[_]: Functor, R](response: EitherT[F, OfsClientError, R]) {
     def handleDefaultErrors: EitherT[F, OfsError, R] =

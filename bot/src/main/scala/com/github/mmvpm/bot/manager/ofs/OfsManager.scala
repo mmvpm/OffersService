@@ -5,14 +5,14 @@ import com.bot4s.telegram.models.Message
 import com.github.mmvpm.bot.client.ofs.response.OfsOffer
 import com.github.mmvpm.bot.manager.ofs.error.OfsError
 import com.github.mmvpm.bot.manager.ofs.response.LoginOrRegisterResponse
-import com.github.mmvpm.bot.model.{OfferPatch, TgPhoto}
-import com.github.mmvpm.model.{Offer, OfferDescription, OfferID}
+import com.github.mmvpm.bot.model.{FullOffer, OfferPatch, TgPhoto}
+import com.github.mmvpm.model.{Offer, OfferDescription, OfferID, User, UserID}
 
 trait OfsManager[F[_]] {
   def login(implicit message: Message): EitherT[F, OfsError, LoginOrRegisterResponse.LoggedIn]
   def loginOrRegister(implicit message: Message): EitherT[F, OfsError, LoginOrRegisterResponse]
 
-  def search(query: String): EitherT[F, OfsError, List[Offer]]
+  def search(query: String): EitherT[F, OfsError, List[FullOffer]]
   def getOffer(offerId: OfferID): EitherT[F, OfsError, Option[Offer]]
   def getOffers(offerIds: Seq[OfferID]): EitherT[F, OfsError, List[Offer]]
   def getMyOffers(implicit message: Message): EitherT[F, OfsError, List[Offer]]

@@ -68,7 +68,7 @@ class StateManagerImpl[F[_]: MonadCancelThrow](ofsManager: OfsManager[F]) extend
         case Listing(_, offers, _) => Some(offers)
         case _                     => None
       }
-      offer <- offers.find(_.id.toString == offerId)
+      offer <- offers.find(_.offer.id.toString == offerId)
     } yield OneOffer(current, offer)
 
     newState.getOrElse(Error(current, "К сожалению, такого id не существует! Попробуйте ещё раз")).pure
