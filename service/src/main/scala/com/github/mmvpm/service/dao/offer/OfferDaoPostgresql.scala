@@ -45,7 +45,9 @@ class OfferDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
           offers <- offersEntries.traverse { offersEntry =>
             selectFromPhotos(offersEntry.id).map(offersEntry.toOffer)
           }
-        } yield offers)
+          orderFromRequest = offerIds.zipWithIndex.toMap
+          offersOrdered = offers.sortBy(o => orderFromRequest.getOrElse(o.id, Int.MaxValue))
+        } yield offersOrdered)
           .transact(tr)
           .attemptT
           .leftMap(error => InternalOfferDaoError(error.getMessage))
