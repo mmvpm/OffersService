@@ -16,6 +16,7 @@ import com.github.mmvpm.bot.model.{ChatID, MessageID}
 import com.github.mmvpm.bot.render.Renderer
 import com.github.mmvpm.bot.state.State._
 import com.github.mmvpm.bot.state.{State, StateManager, Storage}
+import com.github.mmvpm.model.OfferStatus
 import sttp.client3.SttpBackend
 
 import scala.util.Try
@@ -80,18 +81,24 @@ class OfferServiceBot[F[_]: Concurrent](
     }
 
   private def replyResolved(tag: String)(implicit message: Message): F[Unit] =
-    for {
-      nextState <- stateManager.getNextState(tag, stateStorage.get)
-      _ = stateStorage.set(withoutError(nextState))
-      replies = renderer.render(nextState, lastMessageStorage.get, lastPhotosStorage.get)
-      _ <- requestLogged(replies)
-    } yield ()
+    Concurrent[F].ifM(isUserBanned)(
+      reply(
+        """
+          |Вы были забанены за неоднократное нарушение правил сервиса
+          |
+          |Связаться с поддержкой: @mmvpm
+          |""".stripMargin
+      ).void,
+      for {
+        nextState <- stateManager.getNextState(tag, stateStorage.get)
+        _ = stateStorage.set(withoutError(nextState))
+        replies = renderer.render(nextState, lastMessageStorage.get, lastPhotosStorage.get)
+        _ <- requestLogged(replies)
+      } yield ()
+    )
 
-  private def withoutError(state: State): State =
-    state match {
-      case Error(returnTo, _) => returnTo
-      case _                  => state
-    }
+  private def fail(implicit message: Message): F[Unit] =
+    reply("Не понял вас :(").void
 
   // internal
 
@@ -140,8 +147,11 @@ class OfferServiceBot[F[_]: Concurrent](
       case ChatId.Channel(_) => sys.error("channels are not supported")
     }
 
-  private def fail(implicit message: Message): F[Unit] =
-    reply("Не понял вас :(").void
+  private def withoutError(state: State): State =
+    state match {
+      case Error(returnTo, _) => returnTo
+      case _ => state
+    }
 
   private def safe[A](block: => A, default: A): A =
     Try {
@@ -150,4 +160,13 @@ class OfferServiceBot[F[_]: Concurrent](
       logger.error("Bot failed", error)
       default
     }.get
+
+  private def isUserBanned(implicit message: Message): F[Boolean] =
+    ofsManager.getMyOffers.value.map {
+      case Left(error) =>
+        println(s"isUserBanned failed with $error")
+        false
+      case Right(offers) =>
+        offers.count(_.status == OfferStatus.Banned) >= 5
+    }
 }
