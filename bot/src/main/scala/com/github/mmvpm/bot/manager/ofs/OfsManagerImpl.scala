@@ -43,11 +43,10 @@ class OfsManagerImpl[F[_]: Monad](ofsClient: OfsClient[F], sessionStorage: Stora
       offerIds <- ofsClient.search(query).map(_.offerIds)
       offers <- ofsClient.getOffers(offerIds).map(_.offers)
       fullOffers <- offers.traverse { offer =>
-        if (offer.source.isEmpty) {
+        if (offer.source.isEmpty)
           ofsClient.getUser(offer.userId).map(u => FullOffer(offer, u.user))
-        } else {
+        else
           EitherT.pure[F, OfsClientError](FullOffer(offer, ParsedUser))
-        }
       }
     } yield fullOffers).handleDefaultErrors
 
