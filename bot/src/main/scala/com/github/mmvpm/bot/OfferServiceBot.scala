@@ -150,7 +150,7 @@ class OfferServiceBot[F[_]: Concurrent](
   private def withoutError(state: State): State =
     state match {
       case Error(returnTo, _) => returnTo
-      case _ => state
+      case _                  => state
     }
 
   private def safe[A](block: => A, default: A): A =
