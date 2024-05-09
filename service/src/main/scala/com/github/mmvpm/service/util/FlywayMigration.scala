@@ -2,7 +2,7 @@ package com.github.mmvpm.service.util
 
 import cats.effect.Sync
 import cats.syntax.functor._
-import com.github.mmvpm.service.PostgresqlConfig
+import com.github.mmvpm.service.config.PostgresqlConfig
 import org.flywaydb.core.Flyway
 
 object FlywayMigration {
@@ -22,6 +22,6 @@ object FlywayMigration {
       .configure()
       .locations(MigrationDirectory)
       .cleanDisabled(false)
-      .dataSource(config.url, config.user, config.password)
+      .dataSource(config.url, config.user, config.password.get)
       .load()
 }

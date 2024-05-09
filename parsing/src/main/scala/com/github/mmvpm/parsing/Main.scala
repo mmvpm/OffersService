@@ -14,6 +14,7 @@ import com.github.mmvpm.parsing.producer.catalog.{CatalogConverter, CatalogConve
 import com.github.mmvpm.parsing.producer.query.{QueryGenerator, QueryGeneratorFromSeq}
 import com.github.mmvpm.parsing.producer.{PageProducer, PageProducerImpl}
 import com.github.mmvpm.parsing.util.ResourcesUtils.unsafeReadLines
+import com.github.mmvpm.secret.{SecretService, SecretServiceImpl}
 import com.github.mmvpm.util.ConfigUtils.configByStage
 import com.github.mmvpm.util.Logging
 import net.ruippeixotog.scalascraper.browser._
@@ -33,7 +34,10 @@ object Main extends IOApp with Logging {
     for {
       random <- Random.scalaUtilRandom[IO]
       browser = JsoupBrowser()
-      redisFactory = new RedisClientFactory(config.redis)
+
+      secrets: SecretService[IO] = new SecretServiceImpl[IO]
+      redisPassword <- secrets.redisPassword
+      redisFactory = new RedisClientFactory(config.redis.copy(password = redisPassword))
 
       // separate redis client for each dao
       pageVisitedDao: PageVisitedDao[IO] = new PageVisitedDaoRedis[IO](redisFactory)
