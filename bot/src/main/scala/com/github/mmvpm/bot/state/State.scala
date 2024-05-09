@@ -1,6 +1,7 @@
 package com.github.mmvpm.bot.state
 
 import com.github.mmvpm.bot.model.{Button, Draft, Tag, TgPhoto}
+import com.github.mmvpm.bot.util.PriceUtils.priceText
 import com.github.mmvpm.model.{Offer, OfferID}
 
 import scala.util.matching.Regex
@@ -158,10 +159,13 @@ object State {
         s"""
           |$summary
           |
-          |С помощью кнопок от 1 до $StepSizeCropped можно выбрать одно объявление, чтобы посмотреть его подробнее
+          |С помощью $buttonRangeText можно выбрать одно объявление, чтобы посмотреть его подробнее
           |""".stripMargin
       else
         "По вашему запросу ничего не нашлось :("
+
+    private lazy val buttonRangeText =
+      if (StepSizeCropped == 1) "кнопки 1" else s"кнопок от 1 до $StepSizeCropped"
 
     val photos: Seq[TgPhoto] =
       offers
@@ -185,7 +189,7 @@ object State {
         .slice(from, from + StepSizeCropped)
         .zipWithIndex
         .map { case (offer, idx) =>
-          s"${idx + 1}. ${offer.description.name} (${offer.description.price} рублей)"
+          s"${idx + 1}. ${offer.description.name} (${priceText(offer.description.price)})"
         }
         .mkString("\n\n")
   }
@@ -208,7 +212,7 @@ object State {
       s"""
         |${offer.description.name}
         |
-        |Цена: ${offer.description.price} рублей
+        |Цена: ${priceText(offer.description.price)}
         |
         |${offer.description.text}
         |
@@ -270,10 +274,13 @@ object State {
            |
            |$summary
            |
-           |С помощью кнопок от 1 до $StepSizeCropped можно выбрать одно объявление, чтобы посмотреть его подробнее
+           |С помощью $buttonRangeText можно выбрать одно объявление, чтобы посмотреть его подробнее
            |""".stripMargin
       else
         "У вас пока что нет ни одного объявления"
+
+    private lazy val buttonRangeText =
+      if (StepSizeCropped == 1) "кнопки 1" else s"кнопок от 1 до $StepSizeCropped"
 
     val photos: Seq[TgPhoto] =
       offers
@@ -291,7 +298,7 @@ object State {
         .take(StepSizeCropped)
         .zipWithIndex
         .map { case (offer, idx) =>
-          s"${idx + 1}. ${offer.description.name} (${offer.description.price} рублей)"
+          s"${idx + 1}. ${offer.description.name} (${priceText(offer.description.price)})"
         }
         .mkString("\n\n")
   }
@@ -312,7 +319,7 @@ object State {
       s"""
          |${offer.description.name}
          |
-         |Цена: ${offer.description.price} рублей
+         |Цена: ${priceText(offer.description.price)}
          |
          |${offer.description.text}
          |

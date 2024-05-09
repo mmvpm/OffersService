@@ -83,16 +83,24 @@ class StateManagerImpl[F[_]: MonadCancelThrow](ofsManager: OfsManager[F]) extend
   private def toCreateOfferName(current: State)(implicit message: Message): F[State] =
     CreateOfferName(current).pure
 
-  private def toCreateOfferPrice(current: State)(implicit message: Message): F[State] =
-    message.text match {
-      case Some(name) => CreateOfferPrice(current, Draft(name = Some(name))).pure
-      case _          => Error(current, "Пожалуйста, введите название объявления").pure
-    }
+  private def toCreateOfferPrice(current: State)(implicit message: Message): F[State] = {
+    val newState = for {
+      name <- message.text
+      if name.containsAtLeastOneLetterOrDigit
+    } yield CreateOfferPrice(current, Draft(name = Some(name)))
+
+    newState
+      .getOrElse(
+        Error(current, "Пожалуйста, введите название объявления (должно содержать хотя бы одну букву)")
+      )
+      .pure
+  }
 
   private def toCreateOfferDescription(current: State)(implicit message: Message): F[State] = {
     val newState = for {
       priceRaw <- message.text
       price <- priceRaw.toIntOption
+      if price >= 0
       draft <- current match {
         case CreateOfferPrice(_, draft) => Some(draft)
         case _                          => None
@@ -100,7 +108,7 @@ class StateManagerImpl[F[_]: MonadCancelThrow](ofsManager: OfsManager[F]) extend
       updatedDraft = draft.copy(price = Some(price))
     } yield CreateOfferDescription(current, updatedDraft)
 
-    newState.getOrElse(Error(current, "Пожалуйста, введите цену (целое число рублей)")).pure
+    newState.getOrElse(Error(current, "Пожалуйста, введите цену (целое число рублей от 0 до 2 млрд)")).pure
   }
 
   private def toCreateOfferPhoto(current: State)(implicit message: Message): F[State] =
@@ -108,10 +116,15 @@ class StateManagerImpl[F[_]: MonadCancelThrow](ofsManager: OfsManager[F]) extend
       case CreateOfferDescription(_, draft) => // description has been uploaded
         val newState = for {
           description <- message.text
+          if description.containsAtLeastOneLetterOrDigit
           updatedDraft = draft.copy(description = Some(description))
         } yield CreateOfferPhoto(current, updatedDraft)
 
-        newState.getOrElse(Error(current, "Пожалуйста, введите описание к объявлению")).pure
+        newState
+          .getOrElse(
+            Error(current, "Пожалуйста, введите описание к объявлению (должно содержать хотя бы одну букву)")
+          )
+          .pure
 
       case CreateOfferPhoto(_, draft) => // another photo has been uploaded
         val newState = for {
@@ -213,19 +226,19 @@ class StateManagerImpl[F[_]: MonadCancelThrow](ofsManager: OfsManager[F]) extend
     current match {
       case EditOfferName(_, offerId) =>
         message.text match {
-          case Some(newName) =>
+          case Some(newName) if newName.containsAtLeastOneLetterOrDigit =>
             ofsManager
               .updateOffer(offerId, OfferPatch(name = Some(newName)))
               .handleDefaultErrors(
                 current,
                 ifSuccess = _ => UpdatedOffer(current, s"Название было изменено на \"$newName\"").pure
               )
-          case None =>
-            Error(current, "Пожалуйста, введите новое название объявления").pure
+          case _ =>
+            Error(current, "Пожалуйста, введите новое название объявления (должно содержать хотя бы одну букву)").pure
         }
 
       case EditOfferPrice(_, offerId) =>
-        message.text.flatMap(_.toIntOption) match {
+        message.text.flatMap(_.toIntOption).filter(_ >= 0) match {
           case Some(newPrice) =>
             ofsManager
               .updateOffer(offerId, OfferPatch(price = Some(newPrice)))
@@ -233,21 +246,21 @@ class StateManagerImpl[F[_]: MonadCancelThrow](ofsManager: OfsManager[F]) extend
                 current,
                 ifSuccess = _ => UpdatedOffer(current, s"Цена была изменена на $newPrice").pure
               )
-          case None =>
-            Error(current, "Пожалуйста, введите новую цену (целое число рублей)").pure
+          case _ =>
+            Error(current, "Пожалуйста, введите новую цену (целое число рублей от 0 до 2 млрд)").pure
         }
 
       case EditOfferDescription(_, offerId) =>
         message.text match {
-          case Some(newDescription) =>
+          case Some(newDescription) if newDescription.containsAtLeastOneLetterOrDigit =>
             ofsManager
               .updateOffer(offerId, OfferPatch(description = Some(newDescription)))
               .handleDefaultErrors(
                 current,
                 ifSuccess = _ => UpdatedOffer(current, s"Описание было изменено").pure
               )
-          case None =>
-            Error(current, "Пожалуйста, введите новое описание объявления").pure
+          case _ =>
+            Error(current, "Пожалуйста, введите новое описание объявления (должно содержать хотя бы одну букву)").pure
         }
 
       case AddOfferPhoto(_, offerId) =>

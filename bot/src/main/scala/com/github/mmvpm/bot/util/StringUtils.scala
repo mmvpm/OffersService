@@ -12,5 +12,8 @@ object StringUtils {
 
     def toUUID: UUID =
       UUID.fromString(string)
+
+    def containsAtLeastOneLetterOrDigit: Boolean =
+      string.filter(_ != '\u3164').exists(_.isLetterOrDigit)
   }
 }
