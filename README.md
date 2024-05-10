@@ -17,6 +17,23 @@ sbt "project moderation" run
 sbt "project parsing" run
 ```
 
+Before executing the above commands, you need to specify some environment variables:
+
+- ```bash
+  export POSTGRES_PASSWORD=<password>
+  ```
+  for REST API
+
+- ```bash
+  export REDIS_PASSWORD=<password>
+  ```
+  for REST API and Parsing
+
+- ```bash
+  export TELEGRAM_TOKEN=<token>
+  ```
+  for Telegram bot
+
 For example, `sbt "project service" run` will launch the REST API locally, but it will send requests to PostgreSQL and Redis in the Cloud 
 
 ### Using Docker
@@ -25,6 +42,13 @@ To run the service completely locally, first of all, you need to launch PostgreS
 
 ```bash
 docker compose start
+```
+
+Specify the required environment variables:
+
+```bash
+export POSTGRES_PASSWORD=postgres
+export TELEGRAM_TOKEN=<your-token>
 ```
 
 Then, start the REST-api with "local" parameter:
@@ -40,6 +64,8 @@ sbt "project bot" run local
 sbt "project moderation" run local
 sbt "project parsing" run local
 ```
+
+Note, that the local Redis does not require a password
 
 ## Internals
 
@@ -135,4 +161,4 @@ Parsing gets offers from youla.ru to fill in the contents of my service
 
 Moderation Worker requests all offers with the `OnModeration` status from the REST API (in batches, with some delay) and then updating offer statuses to Active or Banned if any violations are detected
 
-<img src="docs/moderation-arch.png" width="600" alt="moderation-arch"/>
+<img src="docs/moderation-arch.png" width="450" alt="moderation-arch"/>
