@@ -245,7 +245,7 @@ class OfferDaoPostgresql[F[_]: MonadCancelThrow](implicit val tr: Transactor[F])
       select id, url, blob, telegram_id
       from photos
       join offer_photos op on photos.id = op.photo_id
-      where op.offer_id = $offerId
+      where offer_id = $offerId
       """
       .query[PhotosEntry]
       .to[List]

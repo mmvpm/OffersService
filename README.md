@@ -130,6 +130,14 @@ create index offers_name_description_idx on offers
     using gin (to_tsvector('russian', name || ' ' || description));
 ```
 
+Indices for internal needs:
+
+```sql
+create index photos_offer_id on offer_photos (offer_id);
+
+create index offers_status_idx on offers (status);
+```
+
 ### REST API
 
 #### Authorization
