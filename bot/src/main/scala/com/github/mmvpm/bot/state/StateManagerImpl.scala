@@ -153,16 +153,21 @@ class StateManagerImpl[F[_]: MonadCancelThrow](ofsManager: OfsManager[F]) extend
     }
 
   private def toMyOffers(current: State)(implicit message: Message): F[State] =
-    ofsManager.getMyOffers
-      .handleDefaultErrors(current, ifSuccess = MyOffers(current, _).pure)
+    current match {
+      case MyOffers(_, offers, from) =>
+        MyOffers(current, offers, from + MyOffers.StepSize).pure
+      case _ =>
+        ofsManager.getMyOffers
+          .handleDefaultErrors(current, ifSuccess = MyOffers.start(current, _).pure)
+    }
 
   private def toMyOffer(current: State)(implicit message: Message): F[State] = {
     val optOffer = for {
       offerId <- message.text
       if offerId.isUUID
       offers <- current match {
-        case MyOffers(_, offers) => Some(offers)
-        case _                   => None
+        case MyOffers(_, offers, _) => Some(offers)
+        case _                      => None
       }
       offer <- offers.find(_.id == offerId.toUUID)
     } yield offer
@@ -361,7 +366,7 @@ class StateManagerImpl[F[_]: MonadCancelThrow](ofsManager: OfsManager[F]) extend
         freshPrevious <- refreshOffers(previous)
       } yield MyOffer(freshPrevious, freshOffer)
 
-    case MyOffers(previous, previousOffers) =>
+    case MyOffers(previous, previousOffers, from) =>
       for {
         result <- ofsManager.getOffers(previousOffers.map(_.id)).value
         freshOffers = result match {
@@ -369,7 +374,7 @@ class StateManagerImpl[F[_]: MonadCancelThrow](ofsManager: OfsManager[F]) extend
           case _             => previousOffers
         }
         freshPrevious <- refreshOffers(previous)
-      } yield MyOffers(freshPrevious, freshOffers)
+      } yield MyOffers(freshPrevious, freshOffers, from)
 
     case current if current.optPrevious.nonEmpty =>
       refreshOffers(current.optPrevious.get)

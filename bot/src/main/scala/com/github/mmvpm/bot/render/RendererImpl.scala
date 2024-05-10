@@ -15,7 +15,7 @@ class RendererImpl extends Renderer {
       photoIds: Option[Seq[MessageID]]
   )(implicit message: Message): Seq[Request[?]] = {
     val buttons = state.next.map(_.map { tag =>
-      InlineKeyboardButton.callbackData(buttonBy(tag), tag)
+      InlineKeyboardButton.callbackData(buttonBy(tag, state), tag)
     })
     val markup = Some(InlineKeyboardMarkup(buttons))
 

@@ -43,14 +43,18 @@ object State {
   val ErrorTag: Tag = "error"
   val UnknownTag: Tag = "unknown"
 
-  def buttonBy(tag: Tag): Button =
+  def buttonBy(tag: Tag, current: State): Button =
     tag match {
-      case SearchTag               => "Найти товар"
-      case ListingTag              => "На следующую страницу"
-      case Listing.chooseOne(idx)  => s"${idx.toInt + 1}" // 1-based for user
-      case CreateOfferNameTag      => "Разместить объявление"
-      case CreatedOfferTag         => "Опубликовать объявление"
-      case MyOffersTag             => "Посмотреть мои объявления"
+      case SearchTag              => "Найти товар"
+      case ListingTag             => "На следующую страницу"
+      case Listing.chooseOne(idx) => s"${idx.toInt + 1}" // 1-based for user
+      case CreateOfferNameTag     => "Разместить объявление"
+      case CreatedOfferTag        => "Опубликовать объявление"
+      case MyOffersTag =>
+        current match {
+          case MyOffers(_, _, _) => "На следующую страницу"
+          case _                 => "Посмотреть мои объявления"
+        }
       case MyOffers.chooseOne(idx) => s"${idx.toInt + 1}" // 1-based for user
       case EditOfferTag            => "Изменить это объявление"
       case EditOfferNameTag        => "Название"
@@ -68,7 +72,7 @@ object State {
     current match {
       case Search(_)                    => ListingTag
       case Listing(_, _, _)             => OneOfferTag
-      case MyOffers(_, _)               => MyOfferTag
+      case MyOffers(_, _, _)            => MyOfferTag
       case CreateOfferName(_)           => CreateOfferPriceTag
       case CreateOfferPrice(_, _)       => CreateOfferDescriptionTag
       case CreateOfferDescription(_, _) => CreateOfferPhotoTag
@@ -266,18 +270,18 @@ object State {
 
   // my offers
 
-  case class MyOffers(previous: State, offers: Seq[Offer]) extends State with WithPrevious with WithPhotos {
+  case class MyOffers(previous: State, offers: Seq[Offer], from: Int) extends State with WithPrevious with WithPhotos {
 
     import MyOffers._
 
-    private val StepSizeCropped = scala.math.min(StepSize, offers.size)
+    private val StepSizeCropped = scala.math.min(StepSize, offers.size - from)
 
     val tag: Tag = MyOffersTag
 
-    val next: Seq[Seq[Tag]] = Seq(offersTags, Seq(BackTag))
+    val next: Seq[Seq[Tag]] = Seq(offersTags, Seq(BackTag) ++ nextPageTag, Seq(StartedTag))
 
     val text: String =
-      if (summary.nonEmpty)
+      if (offers.nonEmpty)
         s"""
            |Все ваши объявления:
            |
@@ -293,18 +297,24 @@ object State {
 
     val photos: Seq[TgPhoto] =
       offers
-        .take(StepSizeCropped)
+        .slice(from, from + StepSizeCropped)
         .map(offer => TgPhoto.first(offer.photos))
 
     def get(idx: Int): Offer =
-      offers.drop(idx).head
+      offers.drop(from + idx).head
 
-    private lazy val offersTags: Seq[Button] =
-      offers.indices.map(idx => s"$MyOffersTag-$idx")
+    private lazy val nextPageTag =
+      if (from + StepSize < offers.length)
+        Seq(MyOffersTag)
+      else
+        Seq()
+
+    private lazy val offersTags: Seq[Tag] =
+      (0 until StepSizeCropped).map(idx => s"$MyOffersTag-$idx")
 
     private lazy val summary: String =
       offers
-        .take(StepSizeCropped)
+        .slice(from, from + StepSizeCropped)
         .zipWithIndex
         .map { case (offer, idx) =>
           val statusText = offer.status match {
@@ -321,6 +331,9 @@ object State {
     val StepSize = 5
 
     val chooseOne: Regex = s"$MyOffersTag-(\\d*)".r
+
+    def start(previous: State, offers: Seq[Offer]): MyOffers =
+      MyOffers(previous, offers, from = 0)
   }
 
   case class MyOffer(previous: State, offer: Offer) extends State with WithPrevious with WithOfferID with WithPhotos {
