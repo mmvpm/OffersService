@@ -73,7 +73,7 @@ Note, that the local Redis does not require a password
 
 #### Actual schema
 
-```postgresql
+```sql
 create table offers
 (
     id          uuid primary key,
@@ -118,7 +118,7 @@ create table offer_photos
 
 Indices for searching by offers:
 
-```postgresql
+```sql
 create index offers_name_idx on offers
     using gin (to_tsvector('russian', name));
 
