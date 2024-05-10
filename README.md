@@ -2,13 +2,15 @@
 
 ## Overview
 
-The classified platform such as Craigslist or Avito that provides the opportunity for peer-to-peer exchanges of goods and services.
+The classified platform such as Craigslist or Avito that provides the opportunity for peer-to-peer exchanges of goods
+and services.
 
 <img src="docs/overview-arch.png" width="600" alt="overview-arch"/>
 
 ## How to launch
 
-Run one of the sbt commands below to start the selected component locally with connection to other services in the Cloud.  
+Run one of the sbt commands below to start the selected component locally with connection to other services in the
+Cloud.
 
 ```bash
 sbt "project service" run
@@ -34,7 +36,8 @@ Before executing the above commands, you need to specify some environment variab
   ```
   for Telegram bot
 
-For example, `sbt "project service" run` will launch the REST API locally, but it will send requests to PostgreSQL and Redis in the Cloud 
+For example, `sbt "project service" run` will launch the REST API locally, but it will send requests to PostgreSQL and
+Redis in the Cloud
 
 ### Using Docker
 
@@ -102,9 +105,10 @@ create table user_offers
 
 create table photos
 (
-    id   uuid primary key,
-    url  text  default null,
-    blob bytea default null
+    id          uuid primary key,
+    url         text  default null,
+    blob        bytea default null,
+    telegram_id text  default null
 );
 
 create table offer_photos
@@ -153,12 +157,13 @@ And authorization separately:
 
 ### Parsing
 
-Parsing gets offers from youla.ru to fill in the contents of my service 
+Parsing gets offers from youla.ru to fill in the contents of my service
 
 <img src="docs/parsing-arch.png" width="600" alt="parsing-arch"/>
 
 ### Moderation
 
-Moderation Worker requests all offers with the `OnModeration` status from the REST API (in batches, with some delay) and then updating offer statuses to Active or Banned if any violations are detected
+Moderation Worker requests all offers with the `OnModeration` status from the REST API (in batches, with some delay) and
+then updating offer statuses to Active or Banned if any violations are detected
 
 <img src="docs/moderation-arch.png" width="450" alt="moderation-arch"/>
