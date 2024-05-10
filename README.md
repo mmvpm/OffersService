@@ -5,6 +5,8 @@
 The classified platform such as Craigslist or Avito that provides the opportunity for peer-to-peer exchanges of goods
 and services.
 
+Demo video: https://disk.yandex.ru/i/EBx8__tIFzzm3Q
+
 <img src="docs/overview-arch.png" width="600" alt="overview-arch"/>
 
 ## How to launch
