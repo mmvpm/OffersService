@@ -3,7 +3,7 @@
 ## Overview
 
 The classified platform such as Craigslist or Avito that provides the opportunity for peer-to-peer exchanges of goods
-and services. The project was done within the framework of one university course.
+and services. The project was done as part of one of my university courses.
 
 <img src="docs/overview-arch.png" width="600" alt="overview-arch"/>
 
