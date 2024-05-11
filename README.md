@@ -23,20 +23,9 @@ sbt "project parsing" run
 
 Before executing the above commands, you need to specify some environment variables:
 
-- ```bash
-  export POSTGRES_PASSWORD=<password>
-  ```
-  for REST API
-
-- ```bash
-  export REDIS_PASSWORD=<password>
-  ```
-  for REST API and Parsing
-
-- ```bash
-  export TELEGRAM_TOKEN=<token>
-  ```
-  for Telegram bot
+- `export POSTGRES_PASSWORD=<password>` for REST API
+- `export REDIS_PASSWORD=<password>` for REST API and Parsing
+- `export TELEGRAM_TOKEN=<token>` for Telegram bot
 
 For example, `sbt "project service" run` will launch the REST API locally, but it will send requests to PostgreSQL and
 Redis in the Cloud
