@@ -81,21 +81,12 @@ class OfferServiceBot[F[_]: Concurrent](
     }
 
   private def replyResolved(tag: String)(implicit message: Message): F[Unit] =
-    Concurrent[F].ifM(isUserBanned)(
-      reply(
-        """
-          |Вы были забанены за неоднократное нарушение правил сервиса
-          |
-          |Связаться с поддержкой: @mmvpm
-          |""".stripMargin
-      ).void,
-      for {
-        nextState <- stateManager.getNextState(tag, stateStorage.get)
-        _ = stateStorage.set(withoutError(nextState))
-        replies = renderer.render(nextState, lastMessageStorage.get, lastPhotosStorage.get)
-        _ <- requestLogged(replies)
-      } yield ()
-    )
+    for {
+      nextState <- stateManager.getNextState(tag, stateStorage.get)
+      _ = stateStorage.set(withoutError(nextState))
+      replies = renderer.render(nextState, lastMessageStorage.get, lastPhotosStorage.get)
+      _ <- requestLogged(replies)
+    } yield ()
 
   private def fail(implicit message: Message): F[Unit] =
     reply("Не понял вас :(").void
@@ -160,13 +151,4 @@ class OfferServiceBot[F[_]: Concurrent](
       logger.error("Bot failed", error)
       default
     }.get
-
-  private def isUserBanned(implicit message: Message): F[Boolean] =
-    ofsManager.getMyOffers.value.map {
-      case Left(error) =>
-        println(s"isUserBanned failed with $error")
-        false
-      case Right(offers) =>
-        offers.count(_.status == OfferStatus.Banned) >= 5
-    }
 }
