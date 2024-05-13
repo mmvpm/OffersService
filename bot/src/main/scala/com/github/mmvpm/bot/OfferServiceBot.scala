@@ -16,7 +16,6 @@ import com.github.mmvpm.bot.model.{ChatID, MessageID}
 import com.github.mmvpm.bot.render.Renderer
 import com.github.mmvpm.bot.state.State._
 import com.github.mmvpm.bot.state.{State, StateManager, Storage}
-import com.github.mmvpm.model.OfferStatus
 import sttp.client3.SttpBackend
 
 import scala.util.Try
