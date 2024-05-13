@@ -3,7 +3,7 @@
 ## Overview
 
 The classified platform such as Craigslist or Avito that provides the opportunity for peer-to-peer exchanges of goods
-and services. The project was done as part of one of my university courses.
+and services. The project was done as part of one of my university courses
 
 <img src="docs/overview-arch.png" width="600" alt="overview-arch"/>
 
@@ -163,6 +163,7 @@ Parsing gets offers from youla.ru to fill in the contents of my service
 ### Moderation
 
 Moderation Worker requests all offers with the `OnModeration` status from the REST API (in batches, with some delay) and
-then updating offer statuses to Active or Banned if any violations are detected
+then updating offer statuses to Active or Banned if any violations are detected. It would be better to use some message
+queue here, but to simplify I decided to implement such a scheme
 
 <img src="docs/moderation-arch.png" width="450" alt="moderation-arch"/>
